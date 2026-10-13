@@ -39,15 +39,24 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
         bgcolor: 'background.paper',
         border: '1px solid',
         borderColor: overlay ? 'primary.main' : 'divider',
-        borderRadius: 2.5,
+        borderRadius: '8px',
         opacity: isDragging ? 0.3 : 1,
-        boxShadow: overlay ? '0 14px 40px #22223822' : '0 2px 3px #17172503',
-        transition: 'border-color .15s, box-shadow .15s',
-        '&:hover': { borderColor: 'primary.light', boxShadow: '0 4px 14px #17172508' },
+        boxShadow: overlay ? '0 8px 24px #17202f20' : 'none',
+        transition: 'border-color .15s',
+        '&:hover': { borderColor: 'text.secondary' },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 1.4, pt: 1.2 }}>
-        <PriorityBadge priority={task.priority} />
+      <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, pt: 0.8 }}>
+        <Typography
+          sx={{
+            fontSize: 11,
+            color: 'text.secondary',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '.2px',
+          }}
+        >
+          TSK-{task.id.slice(-6).toUpperCase()}
+        </Typography>
         <Box sx={{ flex: 1 }} />
         <Tooltip title="Перетащить">
           <IconButton
@@ -82,17 +91,17 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
           width: '100%',
           display: 'block',
           textAlign: 'left',
-          px: 2,
-          pt: 1,
-          pb: 2.2,
-          borderRadius: 2,
+          px: 1.5,
+          pt: 0.5,
+          pb: 1.5,
+          borderRadius: '6px',
         }}
       >
         <Typography
           sx={{
             fontSize: 14,
-            lineHeight: 1.55,
-            fontWeight: 600,
+            lineHeight: 1.5,
+            fontWeight: 500,
             overflowWrap: 'anywhere',
             color: task.status === 'done' ? 'text.secondary' : 'text.primary',
           }}
@@ -104,7 +113,8 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
             variant="body2"
             color="text.secondary"
             sx={{
-              mt: 0.7,
+              mt: 0.5,
+              fontSize: 12,
               display: '-webkit-box',
               WebkitLineClamp: 2,
               WebkitBoxOrient: 'vertical',
@@ -115,20 +125,9 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
             {task.description}
           </Typography>
         )}
-        <Box
-          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2.3 }}
-        >
-          <Typography
-            sx={{
-              fontSize: 10,
-              color: 'text.secondary',
-              fontFamily: 'monospace',
-              letterSpacing: '.4px',
-            }}
-          >
-            #{task.id.slice(-6).toUpperCase()}
-          </Typography>
-          <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2 }}>
+          <PriorityBadge priority={task.priority} />
+          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
             {new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short' }).format(
               new Date(task.createdAt),
             )}

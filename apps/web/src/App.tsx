@@ -20,11 +20,9 @@ import {
   Typography,
   useMediaQuery,
 } from '@mui/material';
-import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded';
 import { filterTasks, statuses, type Priority, type Status, type Task } from './api/tasks';
 import { makeTheme } from './theme';
 import { useTasks } from './hooks/useTasks';
-import { BoardIntro } from './components/BoardIntro';
 import { Header } from './components/Header';
 import { BoardToolbar } from './components/BoardToolbar';
 import { BoardColumn } from './components/BoardColumn';
@@ -101,11 +99,24 @@ export function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Header dark={mode === 'dark'} onTheme={toggleTheme} />
-      <Box
-        component="main"
-        sx={{ maxWidth: 1440, mx: 'auto', px: { xs: 2.5, md: 5 }, pt: { xs: 4, md: 6 } }}
-      >
-        <BoardIntro done={done} total={tasks.length} />
+      <Box component="main" sx={{ maxWidth: 1680, mx: 'auto', px: { xs: 2, md: 4 }, pt: 3 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            pb: 2,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Typography component="h1" variant="h5">
+            Задачи
+          </Typography>
+          <Typography sx={{ fontSize: 12, color: 'text.secondary', ml: 'auto' }}>
+            {tasks.length} всего · {done} завершено
+          </Typography>
+        </Box>
         <BoardToolbar
           search={search}
           priority={priority}
@@ -165,9 +176,9 @@ export function App() {
             sx={{
               display: 'grid',
               gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'repeat(3, minmax(0, 1fr))',
-              gap: { xs: 0, md: 2 },
-              mx: -1.4,
-              pt: 2.5,
+              gap: 2,
+              pt: 0.5,
+              pb: 3,
             }}
           >
             {statuses
@@ -199,25 +210,6 @@ export function App() {
             )}
           </DragOverlay>
         </DndContext>
-        <Box
-          component="footer"
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: 2,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-            py: 2.5,
-            mt: 3,
-            color: 'text.secondary',
-          }}
-        >
-          <Typography sx={{ fontSize: 10 }}>Меньше шума. Больше сделанного.</Typography>
-          <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 0.6 }}>
-            <Typography sx={{ fontSize: 10 }}>Перетаскивайте задачи между колонками</Typography>
-            <ArrowForwardRounded sx={{ fontSize: 13 }} />
-          </Box>
-        </Box>
       </Box>
       {editor && (
         <TaskDrawer

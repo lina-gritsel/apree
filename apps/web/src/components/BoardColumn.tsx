@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { Box, Button, IconButton, Skeleton, Tooltip, Typography } from '@mui/material';
 import AddRounded from '@mui/icons-material/AddRounded';
-import CheckRounded from '@mui/icons-material/CheckRounded';
+import { StatusIcon } from './StatusIcon';
 import { statuses, type Task, type Status } from '../api/tasks';
 import { TaskCard } from './TaskCard';
 interface Props {
@@ -34,34 +34,24 @@ export function BoardColumn({
       data-testid={'column-' + status.value}
       aria-label={status.label}
       sx={{
-        p: 1.4,
-        pt: 0,
-        borderRadius: 3,
-        minHeight: { xs: 350, md: 440 },
-        bgcolor: isOver ? 'action.selected' : 'transparent',
+        p: 1.25,
+        pt: 0.5,
+        borderRadius: '8px',
+        minHeight: { xs: 300, md: 'calc(100vh - 250px)' },
+        bgcolor: isOver ? 'action.selected' : 'action.hover',
         outline: isOver ? '2px dashed' : '2px solid transparent',
         outlineColor: isOver ? 'primary.main' : 'transparent',
         transition: 'background .15s',
         minWidth: 0,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.5, mb: 1.2 }}>
-        <Box
-          sx={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            bgcolor: status.color,
-            boxShadow: '0 0 0 4px ' + status.color + '12',
-          }}
-        />
-        <Typography sx={{ fontSize: 13, fontWeight: 650, ml: 0.4 }}>{status.label}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 1, mb: 0.6 }}>
+        <StatusIcon status={status.value} />
+        <Typography sx={{ fontSize: 13, fontWeight: 600, ml: 0.25 }}>{status.label}</Typography>
         <Box
           component="span"
           sx={{
-            bgcolor: 'action.hover',
             color: 'text.secondary',
-            borderRadius: 1,
             px: 0.8,
             fontSize: 11,
             lineHeight: '21px',
@@ -80,9 +70,9 @@ export function BoardColumn({
           </IconButton>
         </Tooltip>
       </Box>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.4 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
         {loading
-          ? [1, 2].map((id) => <Skeleton key={id} variant="rounded" height={165} />)
+          ? [1, 2].map((id) => <Skeleton key={id} variant="rounded" height={140} />)
           : tasks.map((task) => (
               <TaskCard
                 key={task.id}
@@ -98,33 +88,14 @@ export function BoardColumn({
             sx={{
               border: '1px dashed',
               borderColor: 'divider',
-              borderRadius: 2.5,
+              borderRadius: '6px',
               textAlign: 'center',
-              py: 5,
+              py: 3,
               px: 2,
             }}
           >
-            <Box
-              sx={{
-                width: 34,
-                height: 34,
-                mx: 'auto',
-                mb: 1.5,
-                display: 'grid',
-                placeItems: 'center',
-                color: status.color,
-                bgcolor: status.color + '12',
-                borderRadius: '50%',
-              }}
-            >
-              {status.value === 'done' ? (
-                <CheckRounded fontSize="small" />
-              ) : (
-                <AddRounded fontSize="small" />
-              )}
-            </Box>
             <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
-              {filtered ? 'Ничего не найдено' : 'Пока свободно'}
+              {filtered ? 'Ничего не найдено' : 'Нет задач'}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.6, fontSize: 11 }}>
               {filtered ? 'Попробуйте изменить поиск или фильтр' : status.hint}

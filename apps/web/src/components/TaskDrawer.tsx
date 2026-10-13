@@ -93,14 +93,14 @@ export function TaskDrawer({ task, status, onClose, onSave, onDelete, pending }:
             color: 'text.secondary',
           }}
         >
-          {task ? '#' + task.id.slice(-6).toUpperCase() : 'Новая идея → следующий шаг'}
+          {task ? 'TSK-' + task.id.slice(-6).toUpperCase() : 'Задачи'}
         </Typography>
         <IconButton aria-label="Закрыть" onClick={close} disabled={pending}>
           <CloseRounded fontSize="small" />
         </IconButton>
       </Box>
       <Typography variant="h5" sx={{ mb: 0.8 }}>
-        {task ? 'Детали задачи' : 'Создать задачу'}
+        {task ? 'Редактирование задачи' : 'Новая задача'}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
         {task

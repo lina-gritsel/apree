@@ -1,46 +1,44 @@
 import { createTheme } from '@mui/material/styles';
-export const makeTheme = (mode: 'light' | 'dark') =>
-  createTheme({
+
+export const makeTheme = (mode: 'light' | 'dark') => {
+  const dark = mode === 'dark';
+  return createTheme({
     palette: {
       mode,
-      primary: { main: mode === 'light' ? '#5c57d7' : '#aaa5ff' },
-      background: {
-        default: mode === 'light' ? '#f7f7f4' : '#17181d',
-        paper: mode === 'light' ? '#ffffff' : '#22232b',
-      },
-      text: {
-        primary: mode === 'light' ? '#272931' : '#eeeef5',
-        secondary: mode === 'light' ? '#656873' : '#a4a5b5',
-      },
-      divider: mode === 'light' ? '#e6e6e5' : '#353640',
+      primary: { main: dark ? '#8da4ff' : '#3859c7' },
+      background: { default: dark ? '#131519' : '#ffffff', paper: dark ? '#1b1e24' : '#ffffff' },
+      text: { primary: dark ? '#eceef3' : '#20242d', secondary: dark ? '#a2a9b5' : '#667080' },
+      divider: dark ? '#2d323c' : '#e5e8ed',
+      action: { hover: dark ? '#191c22' : '#f5f6f8', selected: dark ? '#28334e' : '#edf1fc' },
     },
+    shape: { borderRadius: 6 },
     typography: {
-      fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      h3: { fontWeight: 650, letterSpacing: '-1.6px' },
-      h5: { fontWeight: 650, letterSpacing: '-0.6px' },
-      button: { textTransform: 'none', fontWeight: 600, letterSpacing: '-0.1px' },
-      body2: { fontSize: 13, lineHeight: 1.65 },
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      h5: { fontSize: 22, fontWeight: 600, letterSpacing: '-.55px' },
+      button: { textTransform: 'none', fontWeight: 500, fontSize: 13 },
+      body2: { fontSize: 13, lineHeight: 1.6 },
     },
-    shape: { borderRadius: 10 },
     components: {
       MuiButton: {
         defaultProps: { disableElevation: true },
-        styleOverrides: { root: { minHeight: 40, paddingInline: 16 } },
+        styleOverrides: { root: { minHeight: 36, paddingInline: 14, borderRadius: 6 } },
       },
-      MuiIconButton: { styleOverrides: { root: { borderRadius: 9 } } },
+      MuiIconButton: { styleOverrides: { root: { borderRadius: 5 } } },
       MuiOutlinedInput: {
         styleOverrides: {
-          root: { fontSize: 14, background: mode === 'light' ? '#fff' : '#22232b' },
-          notchedOutline: { borderColor: mode === 'light' ? '#e2e3e7' : '#454650' },
+          root: { fontSize: 13, background: dark ? '#1b1e24' : '#fff' },
+          input: { paddingTop: 8, paddingBottom: 8 },
+          notchedOutline: { borderColor: dark ? '#343b48' : '#e0e4eb' },
         },
       },
+      MuiMenuItem: { styleOverrides: { root: { fontSize: 13 } } },
       MuiTooltip: { defaultProps: { arrow: true } },
       MuiCssBaseline: {
         styleOverrides: {
           body: { margin: 0 },
           '*': { boxSizing: 'border-box' },
           'button, a, input': { WebkitTapHighlightColor: 'transparent' },
-          ':focus-visible': { outline: '3px solid #8d86ee', outlineOffset: 3 },
+          ':focus-visible': { outline: '2px solid #6681dd', outlineOffset: 3 },
           '@media (prefers-reduced-motion: reduce)': {
             '*, *::before, *::after': {
               animationDuration: '0.01ms !important',
@@ -52,3 +50,4 @@ export const makeTheme = (mode: 'light' | 'dark') =>
       },
     },
   });
+};

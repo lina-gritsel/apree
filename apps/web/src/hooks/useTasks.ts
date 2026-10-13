@@ -12,7 +12,7 @@ export function useTasks(notify: (message: string, error?: boolean) => void) {
         input.id ? tasks.map((task) => (task.id === saved.id ? saved : task)) : [saved, ...tasks],
       );
       void refresh();
-      notify(input.id ? 'Изменения сохранены' : 'Задача создана. Хорошее начало!');
+      notify(input.id ? 'Изменения сохранены' : 'Задача создана');
     },
   });
   const remove = useMutation({

@@ -17,10 +17,7 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
         color,
         fontSize: 11,
         fontWeight: 600,
-        bgcolor: color + '0d',
-        px: 0.9,
-        py: 0.3,
-        borderRadius: 1,
+        lineHeight: 1.5,
       }}
     >
       <Box sx={{ display: 'flex', gap: '2px', height: 11, alignItems: 'end' }}>
