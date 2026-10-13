@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: sobrano
+      POSTGRES_PASSWORD: sobrano
+      POSTGRES_DB: sobrano
+    ports:
+      - '127.0.0.1:5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U sobrano -d sobrano']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  api:
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    environment:
+      DATABASE_URL: postgresql://sobrano:sobrano@db:5432/sobrano?schema=public
+      PORT: 3001
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - '127.0.0.1:3001:3001'
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    build:
+      context: .
+      dockerfile: infra/web.Dockerfile
+    ports:
+      - '127.0.0.1:5173:80'
+    depends_on:
+      - api
+volumes:
+  postgres_data:
