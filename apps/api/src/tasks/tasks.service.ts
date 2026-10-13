@@ -1,3 +1,4 @@
+import { describeChanges } from './task-activity';
 import { parseAttachments, taskInclude } from './attachments';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -25,7 +26,11 @@ export class TasksService {
   create({ attachments = [], ...data }: CreateTaskDto) {
     const { uploads } = parseAttachments(attachments, false);
     return this.prisma.task.create({
-      data: { ...data, attachments: { create: uploads } },
+      data: {
+        ...data,
+        attachments: { create: uploads },
+        activity: { create: { kind: 'created', message: 'Задача создана' } },
+      },
       include: taskInclude,
     });
   }
@@ -39,22 +44,56 @@ export class TasksService {
   async update(id: string, data: UpdateTaskDto) {
     try {
       const { attachments, ...fields } = data;
-      if (attachments === undefined) {
-        return await this.prisma.task.update({ where: { id }, data: fields, include: taskInclude });
-      }
-      const { retained, uploads } = parseAttachments(attachments, true);
+      const parsed = attachments === undefined ? undefined : parseAttachments(attachments, true);
       return await this.prisma.$transaction(async (tx) => {
-        const owned = await tx.attachment.count({ where: { taskId: id, id: { in: retained } } });
-        if (owned !== retained.length)
+        // Serialize edits of one task so the activity describes the actual previous state.
+        await tx.$queryRaw(Prisma.sql`SELECT "id" FROM "Task" WHERE "id" = ${id}::uuid FOR UPDATE`);
+        const before = await tx.task.findUnique({ where: { id }, include: taskInclude });
+        if (!before) throw new NotFoundException('Задача не найдена');
+        if (
+          parsed &&
+          parsed.retained.some((fileId) => !before.attachments.some((file) => file.id === fileId))
+        ) {
           throw new BadRequestException('Вложение не принадлежит этой задаче');
-        return tx.task.update({
+        }
+        const updated = await tx.task.update({
           where: { id },
           data: {
             ...fields,
-            attachments: { deleteMany: { id: { notIn: retained } }, create: uploads },
+            ...(parsed
+              ? {
+                  attachments: {
+                    deleteMany: { id: { notIn: parsed.retained } },
+                    create: parsed.uploads,
+                  },
+                }
+              : {}),
           },
           include: taskInclude,
         });
+        const message = describeChanges(before, updated);
+        if (message)
+          await tx.taskActivity.create({ data: { taskId: id, kind: 'updated', message } });
+        return updated;
+      });
+    } catch (error) {
+      this.rethrowNotFound(error);
+    }
+  }
+
+  async activity(id: string) {
+    const task = await this.prisma.task.findUnique({ where: { id }, select: { id: true } });
+    if (!task) throw new NotFoundException('Задача не найдена');
+    return this.prisma.taskActivity.findMany({
+      where: { taskId: id },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+    });
+  }
+
+  async comment(id: string, message: string) {
+    try {
+      return await this.prisma.taskActivity.create({
+        data: { task: { connect: { id } }, kind: 'comment', message },
       });
     } catch (error) {
       this.rethrowNotFound(error);

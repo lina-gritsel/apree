@@ -1,3 +1,4 @@
+import { CreateCommentDto } from './dto/create-comment.dto';
 import {
   Body,
   Controller,
@@ -45,6 +46,16 @@ export class TasksController {
       disposition: `attachment; filename="download"; filename*=UTF-8''${encodedName}`,
       length: attachment.size,
     });
+  }
+
+  @Get(':id/activity')
+  activity(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tasks.activity(id);
+  }
+
+  @Post(':id/comments')
+  comment(@Param('id', ParseUUIDPipe) id: string, @Body() body: CreateCommentDto) {
+    return this.tasks.comment(id, body.body);
   }
 
   @Post()

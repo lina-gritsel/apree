@@ -3,7 +3,7 @@ import AddRounded from '@mui/icons-material/AddRounded';
 import LayersOutlined from '@mui/icons-material/LayersOutlined';
 import { Brand } from './Brand';
 
-export function Sidebar({ onCreate }: { onCreate: () => void }) {
+export function Sidebar({ onCreate, onBoard }: { onCreate: () => void; onBoard: () => void }) {
   return (
     <Box
       component="aside"
@@ -30,10 +30,13 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
       <Typography sx={{ fontSize: 11, color: 'text.secondary', px: 1, mt: 4, mb: 1.2 }}>
         Рабочее пространство
       </Typography>
-      <Box
+      <Button
+        onClick={onBoard}
+        color="inherit"
         aria-current="page"
         sx={{
           display: 'flex',
+          justifyContent: 'flex-start',
           alignItems: 'center',
           gap: 1,
           bgcolor: 'action.selected',
@@ -45,7 +48,7 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
       >
         <LayersOutlined sx={{ fontSize: 17 }} />
         Задачи
-      </Box>
+      </Button>
     </Box>
   );
 }

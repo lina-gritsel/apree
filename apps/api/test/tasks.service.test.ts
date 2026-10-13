@@ -7,7 +7,11 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { TasksService } from '../src/tasks/tasks.service';
 
 function serviceWith(task: object) {
-  return new TasksService({ task } as PrismaService);
+  return new TasksService({
+    task,
+    $transaction: async (callback: (tx: object) => Promise<unknown>) =>
+      callback({ task, $queryRaw: async () => [] }),
+  } as unknown as PrismaService);
 }
 
 test('a missing task returns 404 for reads', async () => {
@@ -22,7 +26,7 @@ test('concurrent deletion returns 404 on update and delete', async () => {
       clientVersion: '6',
     });
   };
-  const service = serviceWith({ update: missing, delete: missing });
+  const service = serviceWith({ findUnique: missing, delete: missing });
   await assert.rejects(service.update('missing', { status: 'done' }), NotFoundException);
   await assert.rejects(service.remove('missing'), NotFoundException);
 });
@@ -30,7 +34,7 @@ test('concurrent deletion returns 404 on update and delete', async () => {
 test('database failures are not misrepresented as missing tasks', async () => {
   const failure = new Error('database offline');
   const service = serviceWith({
-    update: async () => {
+    findUnique: async () => {
       throw failure;
     },
   });

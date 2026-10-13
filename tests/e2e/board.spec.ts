@@ -28,10 +28,16 @@ test.describe('Доска задач', () => {
     const task = (await response.json()) as { id: string };
     taskIds.add(task.id);
     await expect(form).not.toBeVisible();
+    const detail = page.getByTestId('task-page');
     await page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true }).click();
-    await form.getByRole('textbox', { name: /^Название/ }).fill(`${title} — обновлено`);
-    await form.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
-    await expect(form).not.toBeVisible();
+    await detail.getByRole('textbox', { name: /^Название/ }).fill(`${title} — обновлено`);
+    const saved = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/tasks/${task.id}`) && response.request().method() === 'PATCH',
+    );
+    await detail.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
+    expect((await saved).ok()).toBeTruthy();
+    await page.getByRole('button', { name: 'Назад к задачам', exact: true }).click();
     await page.getByRole('button', { name: `Действия: ${title} — обновлено`, exact: true }).click();
     const moved = page.waitForResponse(
       (result) =>
@@ -43,11 +49,11 @@ test.describe('Доска задач', () => {
     await page
       .getByRole('button', { name: `Открыть задачу: ${title} — обновлено`, exact: true })
       .click();
-    await expect(form.getByRole('textbox', { name: 'Описание', exact: true })).toHaveValue(
+    await expect(detail.getByRole('textbox', { name: 'Описание', exact: true })).toHaveValue(
       'Проверка сохранения в PostgreSQL',
     );
-    await expect(form.getByRole('combobox', { name: /^Статус/ })).toHaveText('В работе');
-    await form.getByRole('button', { name: 'Удалить задачу', exact: true }).click();
+    await expect(detail.getByRole('combobox', { name: /^Статус/ })).toHaveText('В работе');
+    await detail.getByRole('button', { name: 'Удалить задачу', exact: true }).click();
     await page.getByRole('button', { name: 'Удалить', exact: true }).click();
     await expect(
       page.getByRole('button', { name: `Открыть задачу: ${title} — обновлено`, exact: true }),
@@ -130,6 +136,7 @@ test.describe('Доска задач', () => {
     await page.goto('/');
     const card = page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true });
     const target = page.getByTestId('column-in_progress');
+    await expect(card).toHaveCSS('cursor', 'pointer');
     const sourceBox = await card.boundingBox();
     const targetBox = await target.boundingBox();
     expect(sourceBox).not.toBeNull();
@@ -146,6 +153,7 @@ test.describe('Доска задач', () => {
       sourceBox.y + sourceBox.height / 2,
       { steps: 3 },
     );
+    await expect(page.getByTestId(`overlay-${task.id}`)).toHaveCSS('cursor', 'grabbing');
     await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + 110, { steps: 20 });
     await page.mouse.up();
     expect((await moved).ok()).toBeTruthy();
@@ -154,7 +162,8 @@ test.describe('Доска задач', () => {
     await page.reload();
     await expect(target.getByTestId(`task-${task.id}`)).toBeVisible();
     await card.click();
-    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByTestId('task-page')).toBeVisible();
+    await expect(page).toHaveURL(`/tasks/${task.id}`);
     await expect(page.getByRole('textbox', { name: /^Название/ })).toHaveValue(title);
   });
 
@@ -234,9 +243,10 @@ test.describe('Доска задач', () => {
     taskIds.add(task.id);
     await expect(form).not.toBeVisible();
     await page.reload();
+    const detail = page.getByTestId('task-page');
     await page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true }).click();
-    await expect(form.getByText('Проверка', { exact: true })).toBeVisible();
-    const attachment = form.getByRole('link', { name: 'brief.txt', exact: true });
+    await expect(detail.getByText('Проверка', { exact: true })).toBeVisible();
+    const attachment = detail.getByRole('link', { name: 'brief.txt', exact: true });
     await expect(attachment).toBeVisible();
     const href = await attachment.getAttribute('href');
     expect(href).toBeTruthy();
@@ -244,19 +254,96 @@ test.describe('Доска задач', () => {
     expect(download.status()).toBe(200);
     expect(await download.text()).toBe(fileText);
     expect(download.headers()['content-disposition']).toContain('attachment');
-    await form
+    await detail
       .getByRole('textbox', { name: 'Описание', exact: true })
       .fill('Изменили описание, сохранили файл');
-    await form.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
-    await expect(form).not.toBeVisible();
+    const saved = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/api/tasks/${task.id}`) && response.request().method() === 'PATCH',
+    );
+    await detail.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
+    expect((await saved).ok()).toBeTruthy();
     await page.reload();
-    await page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true }).click();
-    await expect(form.getByText('Проверка', { exact: true })).toBeVisible();
-    await expect(form.getByRole('link', { name: 'brief.txt', exact: true })).toHaveAttribute(
+    await expect(detail.getByText('Проверка', { exact: true })).toBeVisible();
+    await expect(detail.getByRole('link', { name: 'brief.txt', exact: true })).toHaveAttribute(
       'href',
       href!,
     );
     const persisted = await request.get(href!);
     expect(await persisted.text()).toBe(fileText);
+  });
+
+  test('страница задачи: прямая ссылка, комментарий, активность и история браузера', async ({
+    page,
+    request,
+  }) => {
+    const title = `E2E страница ${Date.now()}`;
+    const response = await request.post('/api/tasks', { data: { title } });
+    expect(response.ok()).toBeTruthy();
+    const task = (await response.json()) as { id: string };
+    taskIds.add(task.id);
+    await page.goto('/');
+    await page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true }).click();
+    await expect(page).toHaveURL(`/tasks/${task.id}`);
+    const detail = page.getByTestId('task-page');
+    await expect(detail).toBeVisible();
+    await page.reload();
+    await expect(detail.getByRole('textbox', { name: /^Название/ })).toHaveValue(title);
+    await expect(
+      page
+        .getByRole('region', { name: 'Активность', exact: true })
+        .getByText('Задача создана', { exact: true }),
+    ).toBeVisible();
+    await detail
+      .getByRole('textbox', { name: 'Описание', exact: true })
+      .fill('Несохраненный черновик');
+    page.once('dialog', (dialog) => dialog.dismiss());
+    await page.getByRole('button', { name: 'Назад к задачам', exact: true }).click();
+    await expect(page).toHaveURL(`/tasks/${task.id}`);
+    await expect(detail.getByRole('textbox', { name: 'Описание', exact: true })).toHaveValue(
+      'Несохраненный черновик',
+    );
+    await detail.getByRole('textbox', { name: 'Описание', exact: true }).fill('');
+    const comment = `Согласовали следующий шаг ${Date.now()}`;
+    await detail.getByRole('textbox', { name: 'Комментарий', exact: true }).fill(comment);
+    await page.route(`**/api/tasks/${task.id}/comments`, (route) =>
+      route.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: '{"message":"Попробуйте еще раз"}',
+      }),
+    );
+    await detail.getByRole('button', { name: 'Отправить комментарий', exact: true }).click();
+    await expect(page.getByRole('alert').first()).toBeVisible();
+    await expect(detail.getByRole('textbox', { name: 'Комментарий', exact: true })).toHaveValue(
+      comment,
+    );
+    await page.unroute(`**/api/tasks/${task.id}/comments`);
+    await detail.getByRole('button', { name: 'Отправить комментарий', exact: true }).click();
+    await expect(
+      page
+        .getByRole('region', { name: 'Активность', exact: true })
+        .getByText(comment, { exact: true }),
+    ).toBeVisible();
+    await page.reload();
+    await expect(
+      page
+        .getByRole('region', { name: 'Активность', exact: true })
+        .getByText(comment, { exact: true }),
+    ).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL('/');
+    await expect(
+      page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true }),
+    ).toBeVisible();
+    await page.goForward();
+    await expect(detail).toBeVisible();
+    await page.goto(`/tasks/${task.id}`);
+    await expect(detail.getByRole('textbox', { name: /^Название/ })).toHaveValue(title);
+    await expect(
+      page
+        .getByRole('region', { name: 'Активность', exact: true })
+        .getByText(comment, { exact: true }),
+    ).toBeVisible();
   });
 });

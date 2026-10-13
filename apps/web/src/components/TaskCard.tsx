@@ -51,9 +51,8 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
           textAlign: 'left',
           px: 1.5,
           pt: 1.3,
-          cursor: busy ? 'default' : 'grab',
+          cursor: isDragging || overlay ? 'grabbing' : 'pointer',
           touchAction: 'pan-y',
-          '&:active': { cursor: 'grabbing' },
           pb: 1.5,
           borderRadius: '6px',
         }}

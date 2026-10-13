@@ -10,9 +10,8 @@ import {
   Typography,
 } from '@mui/material';
 import CloseRounded from '@mui/icons-material/CloseRounded';
-import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
-import { type Task, type TaskInput, type Status, type Priority } from '../api/tasks';
+import { type TaskInput, type Status, type Priority } from '../api/tasks';
 import { TaskProperties } from './TaskProperties';
 import {
   AttachmentButton,
@@ -21,33 +20,31 @@ import {
   type DraftAttachment,
 } from './TaskAttachments';
 interface Props {
-  task?: Task;
   status: Status;
   onClose: () => void;
   onSave: (data: TaskInput, id?: string) => Promise<unknown>;
-  onDelete: (task: Task) => void;
   pending: boolean;
 }
-export function TaskDialog({ task, status, onClose, onSave, onDelete, pending }: Props) {
+export function TaskDialog({ status, onClose, onSave, pending }: Props) {
   const submitting = useRef(false);
-  const [title, setTitle] = useState(task?.title ?? '');
-  const [description, setDescription] = useState(task?.description ?? '');
-  const [priority, setPriority] = useState<Priority>(task?.priority ?? 'medium');
-  const [selectedStatus, setStatus] = useState<Status>(task?.status ?? status);
-  const [labels, setLabels] = useState(task?.labels ?? []);
-  const [files, setFiles] = useState<DraftAttachment[]>(task?.attachments ?? []);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState<Priority>('medium');
+  const [selectedStatus, setStatus] = useState<Status>(status);
+  const [labels, setLabels] = useState<string[]>([]);
+  const [files, setFiles] = useState<DraftAttachment[]>([]);
   const [reading, setReading] = useState(false);
   const [error, setError] = useState('');
   const [attempted, setAttempted] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
   const disabled = pending || reading;
   const dirty =
-    title !== (task?.title ?? '') ||
-    description !== (task?.description ?? '') ||
-    priority !== (task?.priority ?? 'medium') ||
-    selectedStatus !== (task?.status ?? status) ||
-    JSON.stringify(labels) !== JSON.stringify(task?.labels ?? []) ||
-    JSON.stringify(files) !== JSON.stringify(task?.attachments ?? []);
+    title !== '' ||
+    description !== '' ||
+    priority !== 'medium' ||
+    selectedStatus !== status ||
+    JSON.stringify(labels) !== JSON.stringify([]) ||
+    JSON.stringify(files) !== JSON.stringify([]);
   const close = () => {
     if (disabled) return;
     if (dirty) setConfirmClose(true);
@@ -61,17 +58,14 @@ export function TaskDialog({ task, status, onClose, onSave, onDelete, pending }:
     if (!title.trim()) return;
     submitting.current = true;
     try {
-      await onSave(
-        {
-          title: title.trim(),
-          description: description.trim(),
-          priority,
-          status: selectedStatus,
-          labels,
-          attachments: attachmentPayload(files),
-        },
-        task?.id,
-      );
+      await onSave({
+        title: title.trim(),
+        description: description.trim(),
+        priority,
+        status: selectedStatus,
+        labels,
+        attachments: attachmentPayload(files),
+      });
       onClose();
     } catch (failure) {
       setError(
@@ -89,7 +83,7 @@ export function TaskDialog({ task, status, onClose, onSave, onDelete, pending }:
     <Dialog
       open
       onClose={close}
-      aria-label={task ? 'Задача' : 'Новая задача'}
+      aria-label="Новая задача"
       maxWidth={false}
       scroll="paper"
       slotProps={{
@@ -112,9 +106,7 @@ export function TaskDialog({ task, status, onClose, onSave, onDelete, pending }:
         <Box sx={{ px: { xs: 2, sm: 3 }, pt: 2, display: 'flex', alignItems: 'center', gap: 0.75 }}>
           <Typography sx={{ fontSize: 12, fontWeight: 600 }}>Apri</Typography>
           <ChevronRightRounded sx={{ fontSize: 15, color: 'text.secondary' }} />
-          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-            {task ? 'TSK-' + task.id.slice(-6).toUpperCase() : 'Новая задача'}
-          </Typography>
+          <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Новая задача</Typography>
           <IconButton
             aria-label="Закрыть"
             size="small"
@@ -209,12 +201,7 @@ export function TaskDialog({ task, status, onClose, onSave, onDelete, pending }:
           />
           {!!files.length && (
             <Box sx={{ mt: 2 }}>
-              <AttachmentList
-                files={files}
-                taskId={task?.id}
-                onChange={setFiles}
-                disabled={disabled}
-              />
+              <AttachmentList files={files} onChange={setFiles} disabled={disabled} />
             </Box>
           )}
         </Box>
@@ -227,24 +214,13 @@ export function TaskDialog({ task, status, onClose, onSave, onDelete, pending }:
             onReading={setReading}
             disabled={disabled}
           />
-          {task && (
-            <IconButton
-              color="inherit"
-              aria-label="Удалить задачу"
-              disabled={disabled}
-              onClick={() => onDelete(task)}
-              sx={{ color: 'text.secondary' }}
-            >
-              <DeleteOutlineRounded sx={{ fontSize: 18 }} />
-            </IconButton>
-          )}
           <Button
             type="submit"
             variant="contained"
             disabled={disabled}
             sx={{ ml: 'auto', fontSize: 12, minHeight: 34, px: 1.75 }}
           >
-            {pending ? 'Сохраняем…' : task ? 'Сохранить изменения' : 'Создать задачу'}
+            {pending ? 'Сохраняем…' : 'Создать задачу'}
           </Button>
         </Box>
       </Box>

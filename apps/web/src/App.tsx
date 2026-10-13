@@ -22,6 +22,8 @@ import {
 } from '@mui/material';
 import { filterTasks, statuses, type Priority, type Status, type Task } from './api/tasks';
 import { makeTheme } from './theme';
+import { TaskPage } from './components/TaskPage';
+import { useTaskNavigation } from './hooks/useTaskNavigation';
 import { useTasks } from './hooks/useTasks';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -39,13 +41,14 @@ function initialTheme(): 'light' | 'dark' {
   }
 }
 export function App() {
+  const { taskId, navigate, onDirtyChange } = useTaskNavigation();
   const [mode, setMode] = useState(initialTheme);
   const theme = useMemo(() => makeTheme(mode), [mode]);
   const mobile = useMediaQuery('(max-width:767px)');
   const [search, setSearch] = useState('');
   const [priority, setPriority] = useState<Priority | 'all'>('all');
   const [mobileStatus, setMobileStatus] = useState<Status>('new');
-  const [editor, setEditor] = useState<{ task?: Task; status: Status } | null>(null);
+  const [editor, setEditor] = useState<{ status: Status } | null>(null);
   const [deleting, setDeleting] = useState<Task | null>(null);
   const [deleteError, setDeleteError] = useState('');
   const [notice, setNotice] = useState<{ message: string; error: boolean } | null>(null);
@@ -55,6 +58,7 @@ export function App() {
   );
   const tasks = query.data ?? [];
   const filtered = filterTasks(tasks, search, priority);
+  const selectedTask = tasks.find((task) => task.id === taskId);
   const done = tasks.filter((task) => task.status === 'done').length;
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -63,7 +67,7 @@ export function App() {
   );
   const create = (status: Status) => setEditor({ status });
   const open = (task: Task) => {
-    if (!move.isPending) setEditor({ task, status: task.status });
+    if (!move.isPending) navigate(task.id);
   };
   const changeStatus = (id: string, status: Status) => {
     if (!move.isPending) move.mutate({ id, status });
@@ -91,7 +95,7 @@ export function App() {
     if (!deleting) return;
     try {
       await remove.mutateAsync(deleting.id);
-      if (editor?.task?.id === deleting.id) setEditor(null);
+      if (taskId === deleting.id) navigate(null, true);
       setDeleting(null);
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : 'Не удалось удалить задачу.');
@@ -100,7 +104,8 @@ export function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Sidebar onCreate={() => create('new')} />
+      {active && <Box component="style">{'body, body * { cursor: grabbing !important; }'}</Box>}
+      <Sidebar onCreate={() => create('new')} onBoard={() => navigate(null)} />
       <Box
         component="main"
         sx={{
@@ -116,125 +121,155 @@ export function App() {
           overflow: 'hidden',
         }}
       >
-        <Header dark={mode === 'dark'} onTheme={toggleTheme} count={tasks.length} done={done} />
-        <Box
-          sx={{
-            px: { xs: 1.5, md: 2 },
-            display: 'flex',
-            flexDirection: 'column',
-            flex: 1,
-            minHeight: 0,
-          }}
-        >
-          <BoardToolbar
-            search={search}
-            priority={priority}
-            onSearch={setSearch}
-            onPriority={setPriority}
-            onCreate={() => create('new')}
-          />
-          {query.isError && (
-            <Alert
-              severity="error"
-              sx={{ mt: 3 }}
-              action={
-                <Button color="inherit" onClick={() => void query.refetch()}>
-                  Повторить
-                </Button>
-              }
-            >
-              Не удалось загрузить задачи. Проверьте подключение и попробуйте ещё раз.
-            </Alert>
-          )}
-          {mobile && (
-            <Tabs
-              value={mobileStatus}
-              onChange={(_, value: Status) => setMobileStatus(value)}
-              variant="fullWidth"
-              sx={{ mt: 2, flexShrink: 0 }}
-            >
-              {statuses.map((status) => (
-                <Tab
-                  key={status.value}
-                  value={status.value}
-                  label={
-                    status.label +
-                    ' · ' +
-                    filtered.filter((task) => task.status === status.value).length
-                  }
-                  sx={{ minWidth: 0, px: 0, fontSize: 12, textTransform: 'none' }}
-                />
-              ))}
-            </Tabs>
-          )}
-          <DndContext
-            sensors={sensors}
-            onDragStart={(event) =>
-              setActive(tasks.find((task) => task.id === event.active.id) ?? null)
-            }
-            onDragEnd={dragEnd}
-            onDragCancel={() => setActive(null)}
-            accessibility={{
-              screenReaderInstructions: {
-                draggable:
-                  'Чтобы взять задачу, нажмите пробел. Перемещайте её стрелками. Нажмите пробел для завершения или Escape для отмены. Статус также можно изменить через меню задачи.',
-              },
+        <Header
+          dark={mode === 'dark'}
+          onTheme={toggleTheme}
+          count={tasks.length}
+          done={done}
+          taskId={taskId}
+          onBack={() => navigate(null)}
+        />
+        {taskId ? (
+          selectedTask ? (
+            <TaskPage
+              key={taskId}
+              task={selectedTask}
+              onSave={(data, id) => save.mutateAsync({ data, id })}
+              pending={save.isPending}
+              onDelete={askDelete}
+              onDirtyChange={onDirtyChange}
+            />
+          ) : (
+            <Box sx={{ p: 4 }}>
+              <Alert severity={query.isError ? 'error' : 'info'}>
+                {query.isPending
+                  ? 'Загрузка задачи…'
+                  : query.isError
+                    ? 'Не удалось загрузить задачу'
+                    : 'Задача не найдена или удалена'}
+              </Alert>
+              <Button onClick={() => (query.isError ? void query.refetch() : navigate(null))}>
+                {query.isError ? 'Повторить' : 'К задачам'}
+              </Button>
+            </Box>
+          )
+        ) : (
+          <Box
+            sx={{
+              px: { xs: 1.5, md: 2 },
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              minHeight: 0,
             }}
           >
-            <Box
-              sx={{
-                display: 'grid',
-                flex: 1,
-                minHeight: 0,
-                gridTemplateRows: 'minmax(0, 1fr)',
-                gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'repeat(3, minmax(0, 1fr))',
-                gap: 1.5,
-                pt: 0.5,
-                pb: 1,
+            <BoardToolbar
+              search={search}
+              priority={priority}
+              onSearch={setSearch}
+              onPriority={setPriority}
+              onCreate={() => create('new')}
+            />
+            {query.isError && (
+              <Alert
+                severity="error"
+                sx={{ mt: 3 }}
+                action={
+                  <Button color="inherit" onClick={() => void query.refetch()}>
+                    Повторить
+                  </Button>
+                }
+              >
+                Не удалось загрузить задачи. Проверьте подключение и попробуйте ещё раз.
+              </Alert>
+            )}
+            {mobile && (
+              <Tabs
+                value={mobileStatus}
+                onChange={(_, value: Status) => setMobileStatus(value)}
+                variant="fullWidth"
+                sx={{ mt: 2, flexShrink: 0 }}
+              >
+                {statuses.map((status) => (
+                  <Tab
+                    key={status.value}
+                    value={status.value}
+                    label={
+                      status.label +
+                      ' · ' +
+                      filtered.filter((task) => task.status === status.value).length
+                    }
+                    sx={{ minWidth: 0, px: 0, fontSize: 12, textTransform: 'none' }}
+                  />
+                ))}
+              </Tabs>
+            )}
+            <DndContext
+              sensors={sensors}
+              onDragStart={(event) =>
+                setActive(tasks.find((task) => task.id === event.active.id) ?? null)
+              }
+              onDragEnd={dragEnd}
+              onDragCancel={() => setActive(null)}
+              accessibility={{
+                screenReaderInstructions: {
+                  draggable:
+                    'Чтобы взять задачу, нажмите пробел. Перемещайте её стрелками. Нажмите пробел для завершения или Escape для отмены. Статус также можно изменить через меню задачи.',
+                },
               }}
             >
-              {statuses
-                .filter((status) => !mobile || status.value === mobileStatus)
-                .map((status) => (
-                  <BoardColumn
-                    key={status.value}
-                    status={status}
-                    tasks={filtered.filter((task) => task.status === status.value)}
-                    loading={query.isPending}
-                    filtered={!!search.trim() || priority !== 'all'}
-                    busy={move.isPending}
-                    onCreate={create}
+              <Box
+                sx={{
+                  display: 'grid',
+                  flex: 1,
+                  minHeight: 0,
+                  gridTemplateRows: 'minmax(0, 1fr)',
+                  gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'repeat(3, minmax(0, 1fr))',
+                  gap: 1.5,
+                  pt: 0.5,
+                  pb: 1,
+                }}
+              >
+                {statuses
+                  .filter((status) => !mobile || status.value === mobileStatus)
+                  .map((status) => (
+                    <BoardColumn
+                      key={status.value}
+                      status={status}
+                      tasks={filtered.filter((task) => task.status === status.value)}
+                      loading={query.isPending}
+                      filtered={!!search.trim() || priority !== 'all'}
+                      busy={move.isPending}
+                      onCreate={create}
+                      onOpen={open}
+                      onMove={changeStatus}
+                      onDelete={askDelete}
+                    />
+                  ))}
+              </Box>
+              <DragOverlay dropAnimation={null}>
+                {active && (
+                  <TaskCard
+                    task={active}
                     onOpen={open}
                     onMove={changeStatus}
                     onDelete={askDelete}
+                    overlay
                   />
-                ))}
-            </Box>
-            <DragOverlay dropAnimation={null}>
-              {active && (
-                <TaskCard
-                  task={active}
-                  onOpen={open}
-                  onMove={changeStatus}
-                  onDelete={askDelete}
-                  overlay
-                />
-              )}
-            </DragOverlay>
-          </DndContext>
-        </Box>
+                )}
+              </DragOverlay>
+            </DndContext>
+          </Box>
+        )}
       </Box>
       {editor && (
         <TaskDialog
-          key={editor.task?.id ?? 'new'}
-          task={editor.task}
           status={editor.status}
           onClose={() => setEditor(null)}
           onSave={async (data, id) => {
             const saved = await save.mutateAsync({ data, id });
             setMobileStatus(saved.status);
           }}
-          onDelete={askDelete}
           pending={save.isPending}
         />
       )}

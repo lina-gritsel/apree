@@ -1,5 +1,12 @@
 export type Status = 'new' | 'in_progress' | 'done';
 export type Priority = 'low' | 'medium' | 'high';
+export interface ActivityEvent {
+  id: string;
+  taskId: string;
+  kind: 'created' | 'updated' | 'comment';
+  message: string;
+  createdAt: string;
+}
 export interface Attachment {
   id: string;
   name: string;
@@ -61,6 +68,13 @@ async function request<T>(path = '', options?: RequestInit): Promise<T> {
   return response.status === 204 ? (undefined as T) : (response.json() as Promise<T>);
 }
 export const tasksApi = {
+  activity: (id: string, signal?: AbortSignal) =>
+    request<ActivityEvent[]>('/' + id + '/activity', { signal }),
+  comment: (id: string, body: string) =>
+    request<ActivityEvent>('/' + id + '/comments', {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
   list: (signal?: AbortSignal) => request<Task[]>('', { signal }),
   create: (task: TaskInput) => request<Task>('', { method: 'POST', body: JSON.stringify(task) }),
   update: (id: string, task: Partial<TaskInput>) =>

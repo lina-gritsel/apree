@@ -42,12 +42,40 @@ test(
         .patch(`/api/tasks/${id}`)
         .send({ status: 'done', title: 'Edited task' })
         .expect(200);
+      const createdActivity = await request(app.getHttpServer())
+        .get(`/api/tasks/${id}/activity`)
+        .expect(200);
+      assert.equal(createdActivity.body[0].kind, 'created');
+      assert.equal(createdActivity.body[1].kind, 'updated');
+      assert.match(createdActivity.body[1].message as string, /Новая → Готово/);
+      await request(app.getHttpServer())
+        .post(`/api/tasks/${id}/comments`)
+        .send({ body: '  Проверено командой  ' })
+        .expect(201);
+      for (const body of ['', '  ', 'x'.repeat(5001), null]) {
+        await request(app.getHttpServer())
+          .post(`/api/tasks/${id}/comments`)
+          .send({ body })
+          .expect(400);
+      }
+      await request(app.getHttpServer())
+        .patch(`/api/tasks/${id}`)
+        .send({ status: 'done' })
+        .expect(200);
       await app.close();
       app = await makeApp();
       const persisted = await request(app.getHttpServer()).get(`/api/tasks/${id}`).expect(200);
       assert.equal(persisted.body.status, 'done');
       assert.equal(persisted.body.title, 'Edited task');
       assert.equal(persisted.body.description, 'Persistent notes');
+      const activity = await request(app.getHttpServer())
+        .get(`/api/tasks/${id}/activity`)
+        .expect(200);
+      assert.deepEqual(
+        activity.body.map((event: { kind: string }) => event.kind),
+        ['created', 'updated', 'comment'],
+      );
+      assert.equal(activity.body[2].message, 'Проверено командой');
       const list = await request(app.getHttpServer()).get('/api/tasks').expect(200);
       assert.ok(list.body.some((task: { id: string }) => task.id === id));
       await request(app.getHttpServer())
@@ -56,6 +84,11 @@ test(
         .expect(400);
       await request(app.getHttpServer()).get('/api/tasks/not-a-uuid').expect(400);
       const missing = randomUUID();
+      await request(app.getHttpServer()).get(`/api/tasks/${missing}/activity`).expect(404);
+      await request(app.getHttpServer())
+        .post(`/api/tasks/${missing}/comments`)
+        .send({ body: 'hello' })
+        .expect(404);
       await request(app.getHttpServer())
         .patch(`/api/tasks/${missing}`)
         .send({ status: 'done' })
