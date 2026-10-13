@@ -3,7 +3,8 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -17,24 +18,24 @@ import {
   Tab,
   Tabs,
   ThemeProvider,
-  Typography,
   useMediaQuery,
 } from '@mui/material';
 import { filterTasks, statuses, type Priority, type Status, type Task } from './api/tasks';
 import { makeTheme } from './theme';
 import { useTasks } from './hooks/useTasks';
 import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
 import { BoardToolbar } from './components/BoardToolbar';
 import { BoardColumn } from './components/BoardColumn';
 import { TaskCard } from './components/TaskCard';
-import { TaskDrawer } from './components/TaskDrawer';
+import { TaskDialog } from './components/TaskDialog';
 import { DeleteDialog } from './components/DeleteDialog';
 
 function initialTheme(): 'light' | 'dark' {
   try {
-    return localStorage.getItem('sobrano-theme') === 'dark' ? 'dark' : 'light';
+    return localStorage.getItem('forma-theme') === 'light' ? 'light' : 'dark';
   } catch {
-    return 'light';
+    return 'dark';
   }
 }
 export function App() {
@@ -56,7 +57,8 @@ export function App() {
   const filtered = filterTasks(tasks, search, priority);
   const done = tasks.filter((task) => task.status === 'done').length;
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
     useSensor(KeyboardSensor),
   );
   const create = (status: Status) => setEditor({ status });
@@ -74,7 +76,7 @@ export function App() {
     const next = mode === 'light' ? 'dark' : 'light';
     setMode(next);
     try {
-      localStorage.setItem('sobrano-theme', next);
+      localStorage.setItem('forma-theme', next);
     } catch {
       /* Theme still works when browser storage is unavailable. */
     }
@@ -98,121 +100,119 @@ export function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Header dark={mode === 'dark'} onTheme={toggleTheme} />
-      <Box component="main" sx={{ maxWidth: 1680, mx: 'auto', px: { xs: 2, md: 4 }, pt: 3 }}>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.5,
-            pb: 2,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Typography component="h1" variant="h5">
-            Задачи
-          </Typography>
-          <Typography sx={{ fontSize: 12, color: 'text.secondary', ml: 'auto' }}>
-            {tasks.length} всего · {done} завершено
-          </Typography>
-        </Box>
-        <BoardToolbar
-          search={search}
-          priority={priority}
-          onSearch={setSearch}
-          onPriority={setPriority}
-          onCreate={() => create('new')}
-        />
-        {query.isError && (
-          <Alert
-            severity="error"
-            sx={{ mt: 3 }}
-            action={
-              <Button color="inherit" onClick={() => void query.refetch()}>
-                Повторить
-              </Button>
+      <Sidebar onCreate={() => create('new')} />
+      <Box
+        component="main"
+        sx={{
+          ml: { xs: 0, md: '220px' },
+          m: { xs: 0, md: '8px 8px 8px 220px' },
+          minHeight: { xs: '100dvh', md: 'calc(100dvh - 16px)' },
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: { xs: 0, md: '10px' },
+          bgcolor: mode === 'dark' ? '#111111' : '#fafafa',
+          overflow: 'hidden',
+        }}
+      >
+        <Header dark={mode === 'dark'} onTheme={toggleTheme} count={tasks.length} done={done} />
+        <Box sx={{ px: { xs: 1.5, md: 2 } }}>
+          <BoardToolbar
+            search={search}
+            priority={priority}
+            onSearch={setSearch}
+            onPriority={setPriority}
+            onCreate={() => create('new')}
+          />
+          {query.isError && (
+            <Alert
+              severity="error"
+              sx={{ mt: 3 }}
+              action={
+                <Button color="inherit" onClick={() => void query.refetch()}>
+                  Повторить
+                </Button>
+              }
+            >
+              Не удалось загрузить задачи. Проверьте подключение и попробуйте ещё раз.
+            </Alert>
+          )}
+          {mobile && (
+            <Tabs
+              value={mobileStatus}
+              onChange={(_, value: Status) => setMobileStatus(value)}
+              variant="fullWidth"
+              sx={{ mt: 2 }}
+            >
+              {statuses.map((status) => (
+                <Tab
+                  key={status.value}
+                  value={status.value}
+                  label={
+                    status.label +
+                    ' · ' +
+                    filtered.filter((task) => task.status === status.value).length
+                  }
+                  sx={{ minWidth: 0, px: 0, fontSize: 12, textTransform: 'none' }}
+                />
+              ))}
+            </Tabs>
+          )}
+          <DndContext
+            sensors={sensors}
+            onDragStart={(event) =>
+              setActive(tasks.find((task) => task.id === event.active.id) ?? null)
             }
-          >
-            Не удалось загрузить задачи. Проверьте подключение и попробуйте ещё раз.
-          </Alert>
-        )}
-        {mobile && (
-          <Tabs
-            value={mobileStatus}
-            onChange={(_, value: Status) => setMobileStatus(value)}
-            variant="fullWidth"
-            sx={{ mt: 2 }}
-          >
-            {statuses.map((status) => (
-              <Tab
-                key={status.value}
-                value={status.value}
-                label={
-                  status.label +
-                  ' · ' +
-                  filtered.filter((task) => task.status === status.value).length
-                }
-                sx={{ minWidth: 0, px: 0, fontSize: 12, textTransform: 'none' }}
-              />
-            ))}
-          </Tabs>
-        )}
-        <DndContext
-          sensors={sensors}
-          onDragStart={(event) =>
-            setActive(tasks.find((task) => task.id === event.active.id) ?? null)
-          }
-          onDragEnd={dragEnd}
-          onDragCancel={() => setActive(null)}
-          accessibility={{
-            screenReaderInstructions: {
-              draggable:
-                'Чтобы взять задачу, нажмите пробел. Перемещайте её стрелками. Нажмите пробел для завершения или Escape для отмены. Статус также можно изменить через меню задачи.',
-            },
-          }}
-        >
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'repeat(3, minmax(0, 1fr))',
-              gap: 2,
-              pt: 0.5,
-              pb: 3,
+            onDragEnd={dragEnd}
+            onDragCancel={() => setActive(null)}
+            accessibility={{
+              screenReaderInstructions: {
+                draggable:
+                  'Чтобы взять задачу, нажмите пробел. Перемещайте её стрелками. Нажмите пробел для завершения или Escape для отмены. Статус также можно изменить через меню задачи.',
+              },
             }}
           >
-            {statuses
-              .filter((status) => !mobile || status.value === mobileStatus)
-              .map((status) => (
-                <BoardColumn
-                  key={status.value}
-                  status={status}
-                  tasks={filtered.filter((task) => task.status === status.value)}
-                  loading={query.isPending}
-                  filtered={!!search.trim() || priority !== 'all'}
-                  busy={move.isPending}
-                  onCreate={create}
+            <Box
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'repeat(3, minmax(0, 1fr))',
+                gap: 1.5,
+                pt: 0.5,
+                pb: 3,
+              }}
+            >
+              {statuses
+                .filter((status) => !mobile || status.value === mobileStatus)
+                .map((status) => (
+                  <BoardColumn
+                    key={status.value}
+                    status={status}
+                    tasks={filtered.filter((task) => task.status === status.value)}
+                    loading={query.isPending}
+                    filtered={!!search.trim() || priority !== 'all'}
+                    busy={move.isPending}
+                    onCreate={create}
+                    onOpen={open}
+                    onMove={changeStatus}
+                    onDelete={askDelete}
+                  />
+                ))}
+            </Box>
+            <DragOverlay dropAnimation={null}>
+              {active && (
+                <TaskCard
+                  task={active}
                   onOpen={open}
                   onMove={changeStatus}
                   onDelete={askDelete}
+                  overlay
                 />
-              ))}
-          </Box>
-          <DragOverlay dropAnimation={null}>
-            {active && (
-              <TaskCard
-                task={active}
-                onOpen={open}
-                onMove={changeStatus}
-                onDelete={askDelete}
-                overlay
-              />
-            )}
-          </DragOverlay>
-        </DndContext>
+              )}
+            </DragOverlay>
+          </DndContext>
+        </Box>
       </Box>
       {editor && (
-        <TaskDrawer
+        <TaskDialog
           key={editor.task?.id ?? 'new'}
           task={editor.task}
           status={editor.status}

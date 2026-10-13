@@ -39,3 +39,31 @@ test('partial update allows omission, rejects null, and validates status', async
   await assert.rejects(update({ title: ' ' }));
   await assert.rejects(update({ status: 'invalid' }));
 });
+
+test('labels normalize whitespace and reject duplicates and invalid attachment arrays', async () => {
+  assert.deepEqual((await create({ title: 'Task', labels: [' design ', 'API'] })).labels, [
+    'design',
+    'API',
+  ]);
+  for (const labels of [
+    null,
+    [''],
+    ['  '],
+    ['a', ' a '],
+    ['a'.repeat(31)],
+    ['1', '2', '3', '4', '5', '6'],
+  ]) {
+    await assert.rejects(create({ title: 'Task', labels }));
+  }
+  for (const attachments of [
+    null,
+    [null],
+    [1],
+    [{ extra: true }],
+    [{ id: 'invalid' }],
+    [{ name: null }],
+    [{}, {}, {}, {}],
+  ]) {
+    await assert.rejects(create({ title: 'Task', attachments }));
+  }
+});

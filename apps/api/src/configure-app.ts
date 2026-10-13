@@ -1,6 +1,8 @@
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 
 export function configureApp(app: INestApplication) {
+  (app as NestExpressApplication).useBodyParser('json', { limit: '9mb' });
   app.setGlobalPrefix('api');
   app.useGlobalPipes(
     new ValidationPipe({

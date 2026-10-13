@@ -128,9 +128,9 @@ test.describe('Доска задач', () => {
     const task = (await response.json()) as { id: string };
     taskIds.add(task.id);
     await page.goto('/');
-    const handle = page.getByRole('button', { name: `Переместить: ${title}`, exact: true });
+    const card = page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true });
     const target = page.getByTestId('column-in_progress');
-    const sourceBox = await handle.boundingBox();
+    const sourceBox = await card.boundingBox();
     const targetBox = await target.boundingBox();
     expect(sourceBox).not.toBeNull();
     expect(targetBox).not.toBeNull();
@@ -150,8 +150,12 @@ test.describe('Доска задач', () => {
     await page.mouse.up();
     expect((await moved).ok()).toBeTruthy();
     await expect(target.getByTestId(`task-${task.id}`)).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.reload();
     await expect(target.getByTestId(`task-${task.id}`)).toBeVisible();
+    await card.click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: /^Название/ })).toHaveValue(title);
   });
 
   test('ошибка смены статуса возвращает карточку в исходную колонку', async ({ page, request }) => {
@@ -199,9 +203,60 @@ test.describe('Доска задач', () => {
     await expect(
       page.getByRole('button', { name: `Открыть задачу: ${prefix} high`, exact: true }),
     ).toBeVisible();
-    await page.getByRole('button', { name: 'Тёмная тема' }).click();
+    await page.getByRole('button', { name: 'Светлая тема' }).click();
     await page.reload();
-    await expect(page.getByRole('button', { name: 'Светлая тема' })).toBeVisible();
-    expect(await page.evaluate(() => localStorage.getItem('sobrano-theme'))).toBe('dark');
+    await expect(page.getByRole('button', { name: 'Тёмная тема' })).toBeVisible();
+    expect(await page.evaluate(() => localStorage.getItem('forma-theme'))).toBe('light');
+  });
+
+  test('метка и файл сохраняются после редактирования и доступны для скачивания', async ({
+    page,
+    request,
+  }) => {
+    const title = `E2E вложение ${Date.now()}`;
+    const fileText = 'Реальный файл: контроль сохранения и скачивания.';
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Создать задачу', exact: true }).click();
+    const form = page.getByRole('dialog');
+    await form.getByRole('textbox', { name: /^Название/ }).fill(title);
+    await form.getByRole('button', { name: 'Метки', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Новая метка', exact: true }).fill('Проверка');
+    await page.getByRole('button', { name: 'Добавить метку', exact: true }).click();
+    await form
+      .getByLabel('Файлы', { exact: true })
+      .setInputFiles({ name: 'brief.txt', mimeType: 'text/plain', buffer: Buffer.from(fileText) });
+    await expect(form.getByText('brief.txt', { exact: true })).toBeVisible();
+    const created = page.waitForResponse(
+      (response) => response.url().endsWith('/api/tasks') && response.request().method() === 'POST',
+    );
+    await form.getByRole('button', { name: 'Создать задачу', exact: true }).click();
+    const task = (await (await created).json()) as { id: string };
+    taskIds.add(task.id);
+    await expect(form).not.toBeVisible();
+    await page.reload();
+    await page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true }).click();
+    await expect(form.getByText('Проверка', { exact: true })).toBeVisible();
+    const attachment = form.getByRole('link', { name: 'brief.txt', exact: true });
+    await expect(attachment).toBeVisible();
+    const href = await attachment.getAttribute('href');
+    expect(href).toBeTruthy();
+    const download = await request.get(href!);
+    expect(download.status()).toBe(200);
+    expect(await download.text()).toBe(fileText);
+    expect(download.headers()['content-disposition']).toContain('attachment');
+    await form
+      .getByRole('textbox', { name: 'Описание', exact: true })
+      .fill('Изменили описание, сохранили файл');
+    await form.getByRole('button', { name: 'Сохранить изменения', exact: true }).click();
+    await expect(form).not.toBeVisible();
+    await page.reload();
+    await page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true }).click();
+    await expect(form.getByText('Проверка', { exact: true })).toBeVisible();
+    await expect(form.getByRole('link', { name: 'brief.txt', exact: true })).toHaveAttribute(
+      'href',
+      href!,
+    );
+    const persisted = await request.get(href!);
+    expect(await persisted.text()).toBe(fileText);
   });
 });

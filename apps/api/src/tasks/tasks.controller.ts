@@ -4,6 +4,8 @@ import {
   Delete,
   Get,
   HttpCode,
+  Header,
+  StreamableFile,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -25,6 +27,24 @@ export class TasksController {
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.tasks.findOne(id);
+  }
+
+  @Get(':taskId/attachments/:attachmentId')
+  @Header('X-Content-Type-Options', 'nosniff')
+  async download(
+    @Param('taskId', ParseUUIDPipe) taskId: string,
+    @Param('attachmentId', ParseUUIDPipe) attachmentId: string,
+  ) {
+    const attachment = await this.tasks.download(taskId, attachmentId);
+    const encodedName = encodeURIComponent(attachment.name).replace(
+      /['()*]/g,
+      (character) => '%' + character.charCodeAt(0).toString(16),
+    );
+    return new StreamableFile(Buffer.from(attachment.data), {
+      type: 'application/octet-stream',
+      disposition: `attachment; filename="download"; filename*=UTF-8''${encodedName}`,
+      length: attachment.size,
+    });
   }
 
   @Post()

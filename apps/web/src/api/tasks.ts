@@ -1,5 +1,13 @@
 export type Status = 'new' | 'in_progress' | 'done';
 export type Priority = 'low' | 'medium' | 'high';
+export interface Attachment {
+  id: string;
+  name: string;
+  contentType: string;
+  size: number;
+}
+export type AttachmentInput =
+  { id: string } | { name: string; contentType: string; dataBase64: string };
 export interface Task {
   id: string;
   title: string;
@@ -8,8 +16,13 @@ export interface Task {
   status: Status;
   createdAt: string;
   updatedAt: string;
+  labels?: string[];
+  attachments?: Attachment[];
 }
-export type TaskInput = Pick<Task, 'title' | 'description' | 'priority' | 'status'>;
+export type TaskInput = Pick<Task, 'title' | 'description' | 'priority' | 'status'> & {
+  labels?: string[];
+  attachments?: AttachmentInput[];
+};
 export const statuses: { value: Status; label: string; color: string; hint: string }[] = [
   {
     value: 'new',

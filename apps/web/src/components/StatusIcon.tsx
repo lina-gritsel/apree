@@ -5,7 +5,15 @@ export function StatusIcon({ status }: { status: Status }) {
   return (
     <SvgIcon
       viewBox="0 0 16 16"
-      sx={{ fontSize: 16, color: status === 'new' ? 'text.secondary' : 'primary.main' }}
+      sx={{
+        fontSize: 16,
+        color:
+          status === 'in_progress'
+            ? '#d7b943'
+            : status === 'done'
+              ? 'primary.main'
+              : 'text.secondary',
+      }}
     >
       {status === 'done' ? (
         <>

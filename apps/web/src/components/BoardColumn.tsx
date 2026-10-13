@@ -34,11 +34,11 @@ export function BoardColumn({
       data-testid={'column-' + status.value}
       aria-label={status.label}
       sx={{
-        p: 1.25,
+        p: 1,
         pt: 0.5,
         borderRadius: '8px',
-        minHeight: { xs: 300, md: 'calc(100vh - 250px)' },
-        bgcolor: isOver ? 'action.selected' : 'action.hover',
+        minHeight: { xs: 300, md: 'calc(100vh - 145px)' },
+        bgcolor: isOver ? 'action.selected' : 'transparent',
         outline: isOver ? '2px dashed' : '2px solid transparent',
         outlineColor: isOver ? 'primary.main' : 'transparent',
         transition: 'background .15s',

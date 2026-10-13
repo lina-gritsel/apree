@@ -14,7 +14,7 @@ interface Props {
 
 export function BoardToolbar({ search, priority, onSearch, onPriority, onCreate }: Props) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 2, flexWrap: 'wrap' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.4, flexWrap: 'wrap' }}>
       <Box
         sx={{
           display: { xs: 'none', md: 'flex' },
@@ -25,12 +25,12 @@ export function BoardToolbar({ search, priority, onSearch, onPriority, onCreate 
           height: 34,
           border: '1px solid',
           borderColor: 'divider',
-          borderRadius: '6px',
+          borderRadius: '18px',
           bgcolor: 'background.paper',
         }}
       >
         <ViewKanbanOutlined sx={{ fontSize: 17, color: 'text.secondary' }} />
-        <Typography sx={{ fontSize: 12, fontWeight: 500 }}>Канбан</Typography>
+        <Typography sx={{ fontSize: 12, fontWeight: 500 }}>Все задачи</Typography>
       </Box>
       <TextField
         size="small"

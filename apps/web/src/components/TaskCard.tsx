@@ -1,17 +1,9 @@
 import { useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import {
-  Box,
-  ButtonBase,
-  IconButton,
-  Menu,
-  MenuItem,
-  Divider,
-  Typography,
-  Tooltip,
-} from '@mui/material';
+import { Box, ButtonBase, IconButton, Menu, MenuItem, Divider, Typography } from '@mui/material';
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded';
-import DragIndicatorRounded from '@mui/icons-material/DragIndicatorRounded';
+import AttachFileRounded from '@mui/icons-material/AttachFileRounded';
+import { StatusIcon } from './StatusIcon';
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import { statuses, type Task, type Status } from '../api/tasks';
@@ -38,76 +30,53 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
         position: 'relative',
         bgcolor: 'background.paper',
         border: '1px solid',
-        borderColor: overlay ? 'primary.main' : 'divider',
+        borderColor: overlay ? 'primary.main' : 'transparent',
         borderRadius: '8px',
         opacity: isDragging ? 0.3 : 1,
-        boxShadow: overlay ? '0 8px 24px #17202f20' : 'none',
+        boxShadow: overlay ? '0 12px 30px #0006' : 'none',
         transition: 'border-color .15s',
-        '&:hover': { borderColor: 'text.secondary' },
+        '&:hover': { borderColor: 'divider' },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 1.5, pt: 0.8 }}>
-        <Typography
-          sx={{
-            fontSize: 11,
-            color: 'text.secondary',
-            fontVariantNumeric: 'tabular-nums',
-            letterSpacing: '.2px',
-          }}
-        >
-          TSK-{task.id.slice(-6).toUpperCase()}
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Tooltip title="Перетащить">
-          <IconButton
-            size="small"
-            aria-label={'Переместить: ' + task.title}
-            {...attributes}
-            {...listeners}
-            disabled={busy}
-            sx={{
-              cursor: 'grab',
-              touchAction: 'none',
-              color: 'text.secondary',
-              '&:active': { cursor: 'grabbing' },
-            }}
-          >
-            <DragIndicatorRounded sx={{ fontSize: 17 }} />
-          </IconButton>
-        </Tooltip>
-        <IconButton
-          size="small"
-          aria-label={'Действия: ' + task.title}
-          onClick={(event) => setAnchor(event.currentTarget)}
-          disabled={busy}
-        >
-          <MoreHorizRounded sx={{ fontSize: 19 }} />
-        </IconButton>
-      </Box>
       <ButtonBase
-        onClick={() => onOpen(task)}
+        {...attributes}
+        {...listeners}
+        onClick={() => {
+          if (!isDragging && !overlay) onOpen(task);
+        }}
         aria-label={'Открыть задачу: ' + task.title}
         sx={{
           width: '100%',
           display: 'block',
           textAlign: 'left',
           px: 1.5,
-          pt: 0.5,
+          pt: 1.3,
+          cursor: busy ? 'default' : 'grab',
+          touchAction: 'pan-y',
+          '&:active': { cursor: 'grabbing' },
           pb: 1.5,
           borderRadius: '6px',
         }}
       >
-        <Typography
-          sx={{
-            fontSize: 14,
-            lineHeight: 1.5,
-            fontWeight: 500,
-            overflowWrap: 'anywhere',
-            color: task.status === 'done' ? 'text.secondary' : 'text.primary',
-          }}
-        >
-          {task.title}
+        <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 0.9, pr: 3 }}>
+          TSK-{task.id.slice(-6).toUpperCase()}
         </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.8 }}>
+          <Box sx={{ display: 'flex', pt: 0.3 }}>
+            <StatusIcon status={task.status} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: 14,
+              lineHeight: 1.5,
+              fontWeight: 500,
+              overflowWrap: 'anywhere',
+              color: task.status === 'done' ? 'text.secondary' : 'text.primary',
+            }}
+          >
+            {task.title}
+          </Typography>
+        </Box>
         {task.description && (
           <Typography
             variant="body2"
@@ -125,15 +94,59 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
             {task.description}
           </Typography>
         )}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 2 }}>
-          <PriorityBadge priority={task.priority} />
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-            {new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short' }).format(
-              new Date(task.createdAt),
-            )}
-          </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 0.6,
+            mt: 1.5,
+            '& > span': {
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 0.5,
+              px: 0.9,
+              py: 0.3,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: '14px',
+              fontSize: 11,
+              color: 'text.secondary',
+            },
+          }}
+        >
+          <Box component="span">
+            <PriorityBadge priority={task.priority} />
+          </Box>
+          {task.labels?.map((label) => (
+            <Box component="span" key={label}>
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: 'primary.main' }} />
+              {label}
+            </Box>
+          ))}
+          {!!task.attachments?.length && (
+            <Box component="span">
+              <AttachFileRounded sx={{ fontSize: 13 }} />
+              {task.attachments.length}
+            </Box>
+          )}
         </Box>
+        <Typography sx={{ mt: 1.2, fontSize: 11, color: 'text.secondary' }}>
+          Создана{' '}
+          {new Intl.DateTimeFormat('ru', { day: 'numeric', month: 'short' }).format(
+            new Date(task.createdAt),
+          )}
+        </Typography>
       </ButtonBase>
+      <IconButton
+        size="small"
+        aria-label={'Действия: ' + task.title}
+        onClick={(event) => setAnchor(event.currentTarget)}
+        disabled={busy}
+        sx={{ position: 'absolute', right: 6, top: 5, color: 'text.secondary' }}
+      >
+        <MoreHorizRounded sx={{ fontSize: 17 }} />
+      </IconButton>
       <Menu anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}>
         {statuses.map((status) => (
           <MenuItem
