@@ -67,3 +67,17 @@ test('labels normalize whitespace and reject duplicates and invalid attachment a
     await assert.rejects(create({ title: 'Task', attachments }));
   }
 });
+
+test('rejects PostgreSQL-incompatible NUL text before persistence', async () => {
+  for (const field of ['title', 'description']) {
+    await assert.rejects(create({ title: 'Task', [field]: 'bad\0text' }));
+    await assert.rejects(update({ [field]: 'bad\0text' }));
+  }
+  await assert.rejects(create({ title: 'Task', labels: ['bad\0label'] }));
+  await assert.rejects(
+    create({
+      title: 'Task',
+      attachments: [{ name: 'file.txt', contentType: 'text/\0plain', dataBase64: '' }],
+    }),
+  );
+});

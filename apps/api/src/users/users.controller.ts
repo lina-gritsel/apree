@@ -1,15 +1,6 @@
+import { CreateUserDto } from './dto/create-user.dto';
 import { Body, Controller, Get, Post } from '@nestjs/common';
-import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { UsersService } from './users.service';
-
-export class CreateUserDto {
-  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(80)
-  name!: string;
-}
 
 @Controller('users')
 export class UsersController {

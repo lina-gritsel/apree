@@ -1,11 +1,9 @@
+import { createTestApp } from './helpers/create-test-app';
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { configureApp } from '../src/configure-app';
 
 // Opt-in: point DATABASE_URL_TEST at a migrated, disposable PostgreSQL database.
 test(
@@ -14,15 +12,7 @@ test(
     skip: !process.env.DATABASE_URL_TEST,
   },
   async () => {
-    process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
-    const makeApp = async () => {
-      const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
-      const app = module.createNestApplication();
-      configureApp(app);
-      await app.init();
-      return app;
-    };
-    let app = await makeApp();
+    let app = await createTestApp();
     let id: string | undefined;
     try {
       await request(app.getHttpServer()).get('/api/health').expect(200);
@@ -52,7 +42,7 @@ test(
         .post(`/api/tasks/${id}/comments`)
         .send({ body: '  Проверено командой  ' })
         .expect(201);
-      for (const body of ['', '  ', 'x'.repeat(5001), null]) {
+      for (const body of ['', '  ', 'x'.repeat(5001), 'bad\0comment', null]) {
         await request(app.getHttpServer())
           .post(`/api/tasks/${id}/comments`)
           .send({ body })
@@ -63,7 +53,7 @@ test(
         .send({ status: 'done' })
         .expect(200);
       await app.close();
-      app = await makeApp();
+      app = await createTestApp();
       const persisted = await request(app.getHttpServer()).get(`/api/tasks/${id}`).expect(200);
       assert.equal(persisted.body.status, 'done');
       assert.equal(persisted.body.title, 'Edited task');
@@ -110,11 +100,7 @@ test(
     skip: !process.env.DATABASE_URL_TEST,
   },
   async () => {
-    process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
-    const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    const app = module.createNestApplication();
-    configureApp(app);
-    await app.init();
+    const app = await createTestApp();
     const ids: string[] = [];
     const http = () => request(app.getHttpServer());
     const upload = {

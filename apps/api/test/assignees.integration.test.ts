@@ -1,27 +1,21 @@
+import { createTestApp } from './helpers/create-test-app';
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
-import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { configureApp } from '../src/configure-app';
 import { PrismaService } from '../src/prisma/prisma.service';
 
 test(
   'assignments persist and comment files survive task attachment replacement',
   { skip: !process.env.DATABASE_URL_TEST },
   async () => {
-    process.env.DATABASE_URL = process.env.DATABASE_URL_TEST;
-    const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    const app = module.createNestApplication();
-    configureApp(app);
-    await app.init();
+    const app = await createTestApp();
     const http = () => request(app.getHttpServer());
     const users: string[] = [];
     let taskId: string | undefined;
     try {
-      for (const name of ['', ' ', 'x'.repeat(81), null])
+      for (const name of ['', ' ', 'x'.repeat(81), 'bad\0name', null])
         await http().post('/api/users').send({ name }).expect(400);
       const first = await http().post('/api/users').send({ name: '  Test Alice  ' }).expect(201);
       const second = await http().post('/api/users').send({ name: 'Test Bob' }).expect(201);
@@ -105,7 +99,7 @@ test(
       );
     } finally {
       if (taskId) await http().delete(`/api/tasks/${taskId}`);
-      await module.get(PrismaService).workspaceUser.deleteMany({ where: { id: { in: users } } });
+      await app.get(PrismaService).workspaceUser.deleteMany({ where: { id: { in: users } } });
       await app.close();
     }
   },

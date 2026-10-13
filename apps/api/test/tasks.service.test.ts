@@ -1,16 +1,17 @@
 import 'reflect-metadata';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { TasksService } from '../src/tasks/tasks.service';
 
-function serviceWith(task: object) {
+function serviceWith(task: object, workspaceUser: object = {}) {
   return new TasksService({
     task,
+    workspaceUser,
     $transaction: async (callback: (tx: object) => Promise<unknown>) =>
-      callback({ task, $queryRaw: async () => [] }),
+      callback({ task, workspaceUser, $queryRaw: async () => [] }),
   } as unknown as PrismaService);
 }
 
@@ -39,4 +40,26 @@ test('database failures are not misrepresented as missing tasks', async () => {
     },
   });
   await assert.rejects(service.update('id', {}), (error) => error === failure);
+});
+
+test('assignee deleted between validation and write returns a client error', async () => {
+  const failure = new Prisma.PrismaClientKnownRequestError('foreign key failed', {
+    code: 'P2003',
+    clientVersion: '6',
+    meta: { field_name: 'Task_assigneeId_fkey (index)' },
+  });
+  const failWrite = async () => {
+    throw failure;
+  };
+  const service = serviceWith(
+    { create: failWrite, update: failWrite, findUnique: async () => ({ attachments: [] }) },
+    {
+      findUnique: async () => ({ id: 'assignee' }),
+    },
+  );
+  await assert.rejects(
+    service.create({ title: 'Task', assigneeId: 'assignee' }),
+    BadRequestException,
+  );
+  await assert.rejects(service.update('task', { assigneeId: 'assignee' }), BadRequestException);
 });

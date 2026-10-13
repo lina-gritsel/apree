@@ -18,11 +18,15 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     files: ['**/*.ts', '**/*.tsx'],
-    languageOptions: { globals: { ...globals.node, ...globals.browser } },
     rules: { '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }] },
   },
   {
-    files: ['apps/web/**/*.tsx', 'apps/web/**/*.ts'],
+    files: ['apps/api/**/*.ts', 'tests/**/*.ts', '*.ts', 'apps/web/*.ts'],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['apps/web/src/**/*.tsx', 'apps/web/src/**/*.ts'],
+    languageOptions: { globals: globals.browser },
     plugins: { 'react-hooks': reactHooks },
     rules: reactHooks.configs.recommended.rules,
   },
