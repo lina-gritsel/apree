@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
-RUN npm ci
+RUN npm ci --workspace @sobrano/web --include-workspace-root=false
 COPY apps/web apps/web
 RUN npm run build -w @sobrano/web
 FROM nginx:alpine

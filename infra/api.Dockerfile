@@ -4,7 +4,7 @@ WORKDIR /app
 COPY package*.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
-RUN npm ci
+RUN npm ci --workspace @sobrano/api --include-workspace-root=false
 COPY apps/api apps/api
 RUN npm run db:generate && npm run build -w @sobrano/api
 USER node
