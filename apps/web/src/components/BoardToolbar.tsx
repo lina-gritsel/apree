@@ -14,7 +14,16 @@ interface Props {
 
 export function BoardToolbar({ search, priority, onSearch, onPriority, onCreate }: Props) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 1.4, flexWrap: 'wrap' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        py: 1.4,
+        flexWrap: 'wrap',
+        flexShrink: 0,
+      }}
+    >
       <Box
         sx={{
           display: { xs: 'none', md: 'flex' },

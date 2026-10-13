@@ -106,7 +106,9 @@ export function App() {
         sx={{
           ml: { xs: 0, md: '220px' },
           m: { xs: 0, md: '8px 8px 8px 220px' },
-          minHeight: { xs: '100dvh', md: 'calc(100dvh - 16px)' },
+          height: { xs: '100dvh', md: 'calc(100dvh - 16px)' },
+          display: 'flex',
+          flexDirection: 'column',
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: { xs: 0, md: '10px' },
@@ -115,7 +117,15 @@ export function App() {
         }}
       >
         <Header dark={mode === 'dark'} onTheme={toggleTheme} count={tasks.length} done={done} />
-        <Box sx={{ px: { xs: 1.5, md: 2 } }}>
+        <Box
+          sx={{
+            px: { xs: 1.5, md: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
           <BoardToolbar
             search={search}
             priority={priority}
@@ -141,7 +151,7 @@ export function App() {
               value={mobileStatus}
               onChange={(_, value: Status) => setMobileStatus(value)}
               variant="fullWidth"
-              sx={{ mt: 2 }}
+              sx={{ mt: 2, flexShrink: 0 }}
             >
               {statuses.map((status) => (
                 <Tab
@@ -174,10 +184,13 @@ export function App() {
             <Box
               sx={{
                 display: 'grid',
+                flex: 1,
+                minHeight: 0,
+                gridTemplateRows: 'minmax(0, 1fr)',
                 gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'repeat(3, minmax(0, 1fr))',
                 gap: 1.5,
                 pt: 0.5,
-                pb: 3,
+                pb: 1,
               }}
             >
               {statuses

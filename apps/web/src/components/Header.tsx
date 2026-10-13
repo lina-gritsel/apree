@@ -18,6 +18,7 @@ export function Header({
       component="header"
       sx={{
         height: 50,
+        flexShrink: 0,
         display: 'flex',
         alignItems: 'center',
         gap: 1,
@@ -32,7 +33,7 @@ export function Header({
         alt=""
         sx={{ width: 18, height: 18, objectFit: 'contain' }}
       />
-      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Apree Team</Typography>
+      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Apri</Typography>
       <ChevronRightRounded sx={{ fontSize: 16, color: 'text.secondary' }} />
       <Typography component="h1" sx={{ fontSize: 13, fontWeight: 500 }}>
         Задачи

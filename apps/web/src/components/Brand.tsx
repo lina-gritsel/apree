@@ -2,7 +2,7 @@ import { Box, Typography } from '@mui/material';
 
 export function Brand() {
   return (
-    <Box aria-label="Apree Team" sx={{ display: 'flex', alignItems: 'center', gap: 1.1 }}>
+    <Box aria-label="Apri" sx={{ display: 'flex', alignItems: 'center', gap: 1.1 }}>
       <Box
         component="img"
         src="/apree-logo.png"
@@ -13,7 +13,7 @@ export function Brand() {
         component="span"
         sx={{ fontSize: 17, fontWeight: 650, letterSpacing: '-.4px', whiteSpace: 'nowrap' }}
       >
-        Apree Team
+        Apri
       </Typography>
     </Box>
   );

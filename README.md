@@ -1,8 +1,8 @@
-# Apree Team
+# Apri
 
 Небольшая канбан-доска с настоящим API и PostgreSQL. Тестовое задание «Мини-задачник»: три статуса, полный цикл работы с задачами и внимание к поведению интерфейса.
 
-![Apree Team — доска задач](docs/screenshots/desktop.png)
+![Apri — доска задач](docs/screenshots/desktop.png)
 
 ## Возможности
 
@@ -78,4 +78,4 @@ docs/              Решения и использование AI
 
 ## Окно задачи
 
-![Apree Team — создание задачи](docs/screenshots/modal.png)
+![Apri — создание задачи](docs/screenshots/modal.png)

@@ -110,7 +110,7 @@ export function TaskDialog({ task, status, onClose, onSave, onDelete, pending }:
     >
       <Box component="form" onSubmit={submit} noValidate>
         <Box sx={{ px: { xs: 2, sm: 3 }, pt: 2, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>Apree Team</Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>Apri</Typography>
           <ChevronRightRounded sx={{ fontSize: 15, color: 'text.secondary' }} />
           <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
             {task ? 'TSK-' + task.id.slice(-6).toUpperCase() : 'Новая задача'}

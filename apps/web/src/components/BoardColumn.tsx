@@ -37,7 +37,9 @@ export function BoardColumn({
         p: 1,
         pt: 0.5,
         borderRadius: '8px',
-        minHeight: { xs: 300, md: 'calc(100vh - 145px)' },
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
         bgcolor: isOver ? 'action.selected' : 'transparent',
         outline: isOver ? '2px dashed' : '2px solid transparent',
         outlineColor: isOver ? 'primary.main' : 'transparent',
@@ -45,7 +47,7 @@ export function BoardColumn({
         minWidth: 0,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 1, mb: 0.6 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0, py: 1, mb: 0.6 }}>
         <StatusIcon status={status.value} />
         <Typography sx={{ fontSize: 13, fontWeight: 600, ml: 0.25 }}>{status.label}</Typography>
         <Box
@@ -70,7 +72,18 @@ export function BoardColumn({
           </IconButton>
         </Tooltip>
       </Box>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+          flex: 1,
+          minHeight: 0,
+          overflowY: 'auto',
+          overscrollBehaviorY: 'contain',
+          '& > *': { flexShrink: 0 },
+        }}
+      >
         {loading
           ? [1, 2].map((id) => <Skeleton key={id} variant="rounded" height={140} />)
           : tasks.map((task) => (
