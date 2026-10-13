@@ -1,0 +1,4 @@
+apree-logo.png
+Source: https://lk.apree-tech.com/apree-favicon.png
+Official Apree portal favicon, referenced in the portal HTML.
+Downloaded unchanged on 2026-10-13 for this Apree assessment project.

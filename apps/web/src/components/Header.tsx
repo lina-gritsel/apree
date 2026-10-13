@@ -2,7 +2,6 @@ import { Box, IconButton, Tooltip, Typography } from '@mui/material';
 import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
-import LayersOutlined from '@mui/icons-material/LayersOutlined';
 export function Header({
   dark,
   onTheme,
@@ -27,8 +26,13 @@ export function Header({
         borderColor: 'divider',
       }}
     >
-      <LayersOutlined sx={{ fontSize: 17, color: 'primary.main' }} />
-      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Forma</Typography>
+      <Box
+        component="img"
+        src="/apree-logo.png"
+        alt=""
+        sx={{ width: 18, height: 18, objectFit: 'contain' }}
+      />
+      <Typography sx={{ fontSize: 13, color: 'text.secondary' }}>Apree Team</Typography>
       <ChevronRightRounded sx={{ fontSize: 16, color: 'text.secondary' }} />
       <Typography component="h1" sx={{ fontSize: 13, fontWeight: 500 }}>
         Задачи

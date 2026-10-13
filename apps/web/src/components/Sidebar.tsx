@@ -46,12 +46,6 @@ export function Sidebar({ onCreate }: { onCreate: () => void }) {
         <LayersOutlined sx={{ fontSize: 17 }} />
         Задачи
       </Box>
-      <Box sx={{ mt: 'auto', px: 1, py: 1 }}>
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Forma workspace</Typography>
-        <Typography sx={{ fontSize: 11, mt: 0.5, color: 'text.secondary', opacity: 0.65 }}>
-          Личное пространство
-        </Typography>
-      </Box>
     </Box>
   );
 }

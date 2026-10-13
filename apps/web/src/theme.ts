@@ -2,6 +2,10 @@ import { createTheme } from '@mui/material/styles';
 
 export const makeTheme = (mode: 'light' | 'dark') => {
   const dark = mode === 'dark';
+  const surface = dark ? '#1b1b1b' : '#ffffff';
+  const border = dark ? '#303030' : '#dedede';
+  const hover = dark ? '#292929' : '#f2f2f2';
+  const selected = dark ? '#323232' : '#eaeaea';
   return createTheme({
     palette: {
       mode,
@@ -19,20 +23,84 @@ export const makeTheme = (mode: 'light' | 'dark') => {
       body2: { fontSize: 13, lineHeight: 1.6 },
     },
     components: {
-      MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
+      MuiButtonBase: { defaultProps: { disableRipple: true } },
+      MuiPaper: {
+        defaultProps: { elevation: 0 },
+        styleOverrides: { root: { backgroundImage: 'none', '--Paper-overlay': 'none' } },
+      },
+      MuiDialog: {
+        styleOverrides: {
+          paper: {
+            backgroundColor: surface,
+            backgroundImage: 'none',
+            border: `1px solid ${border}`,
+            borderRadius: 12,
+            boxShadow: '0 24px 80px #0006',
+          },
+        },
+      },
+      MuiDialogTitle: {
+        styleOverrides: { root: { fontSize: 16, fontWeight: 600, padding: '22px 24px 16px' } },
+      },
+      MuiPopover: {
+        defaultProps: { elevation: 0 },
+        styleOverrides: {
+          paper: {
+            backgroundColor: surface,
+            backgroundImage: 'none',
+            border: `1px solid ${border}`,
+            borderRadius: 8,
+            boxShadow: '0 8px 28px #0005',
+          },
+        },
+      },
+      MuiMenu: { styleOverrides: { paper: { marginTop: 5 }, list: { padding: 4 } } },
+      MuiSelect: { styleOverrides: { icon: { fontSize: 18, color: dark ? '#999' : '#777' } } },
+      MuiChip: {
+        styleOverrides: { root: { backgroundColor: hover, border: `1px solid ${border}` } },
+      },
+
       MuiButton: {
         defaultProps: { disableElevation: true },
         styleOverrides: { root: { minHeight: 36, paddingInline: 14, borderRadius: 6 } },
       },
       MuiIconButton: { styleOverrides: { root: { borderRadius: 5 } } },
+      MuiInputLabel: {
+        styleOverrides: { root: { '&.Mui-focused': { color: dark ? '#a1a1a1' : '#707070' } } },
+      },
       MuiOutlinedInput: {
         styleOverrides: {
-          root: { fontSize: 13, background: dark ? '#1b1b1b' : '#fff' },
+          root: {
+            fontSize: 13,
+            background: surface,
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: dark ? '#484848' : '#bdbdbd',
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderWidth: 1,
+              borderColor: dark ? '#666' : '#999',
+            },
+            '&.Mui-focused': { boxShadow: dark ? '0 0 0 2px #ffffff08' : '0 0 0 2px #00000005' },
+          },
           input: { paddingTop: 8, paddingBottom: 8 },
           notchedOutline: { borderColor: dark ? '#303030' : '#e0e0e0' },
         },
       },
-      MuiMenuItem: { styleOverrides: { root: { fontSize: 13 } } },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            fontSize: 13,
+            minHeight: 32,
+            padding: '7px 10px',
+            borderRadius: 5,
+            '&:hover': { backgroundColor: hover },
+            '&.Mui-selected': { backgroundColor: selected },
+            '&.Mui-selected:hover, &.Mui-focusVisible, &.Mui-selected.Mui-focusVisible': {
+              backgroundColor: selected,
+            },
+          },
+        },
+      },
       MuiTooltip: { defaultProps: { arrow: true } },
       MuiCssBaseline: {
         styleOverrides: {
