@@ -2,8 +2,16 @@ import { BadRequestException } from '@nestjs/common';
 import { AttachmentDto } from './dto/task-extras.dto';
 
 export const attachmentMetadata = { id: true, name: true, contentType: true, size: true } as const;
-export const taskInclude = {
+export const activityInclude = {
   attachments: { select: attachmentMetadata, orderBy: { createdAt: 'asc' as const } },
+};
+export const taskInclude = {
+  assignee: true,
+  attachments: {
+    where: { taskActivityId: null },
+    select: attachmentMetadata,
+    orderBy: { createdAt: 'asc' as const },
+  },
 };
 export const MAX_FILE_SIZE = 2 * 1024 * 1024;
 

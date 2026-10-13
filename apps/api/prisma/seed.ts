@@ -47,6 +47,14 @@ const samples = [
 ];
 
 async function seed() {
+  const demoUsers = [
+    { id: 'fac91aa1-150e-4085-94cd-990ae94da001', name: 'Алексей · демо', color: '#7c6ee6' },
+    { id: 'fac91aa1-150e-4085-94cd-990ae94da002', name: 'Мария · демо', color: '#39866f' },
+    { id: 'fac91aa1-150e-4085-94cd-990ae94da003', name: 'Денис · демо', color: '#497fb3' },
+  ];
+  for (const user of demoUsers) {
+    await prisma.workspaceUser.upsert({ where: { id: user.id }, create: user, update: {} });
+  }
   for (const task of samples) {
     await prisma.task.upsert({ where: { id: task.id }, create: task, update: {} });
   }

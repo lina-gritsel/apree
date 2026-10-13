@@ -1,5 +1,6 @@
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { describeChanges } from './task-activity';
-import { parseAttachments, taskInclude } from './attachments';
+import { activityInclude, parseAttachments, taskInclude } from './attachments';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,7 +24,8 @@ export class TasksService {
     return task;
   }
 
-  create({ attachments = [], ...data }: CreateTaskDto) {
+  async create({ attachments = [], ...data }: CreateTaskDto) {
+    await this.validateAssignee(data.assigneeId, this.prisma);
     const { uploads } = parseAttachments(attachments, false);
     return this.prisma.task.create({
       data: {
@@ -56,6 +58,7 @@ export class TasksService {
         ) {
           throw new BadRequestException('Вложение не принадлежит этой задаче');
         }
+        await this.validateAssignee(fields.assigneeId, tx);
         const updated = await tx.task.update({
           where: { id },
           data: {
@@ -63,7 +66,7 @@ export class TasksService {
             ...(parsed
               ? {
                   attachments: {
-                    deleteMany: { id: { notIn: parsed.retained } },
+                    deleteMany: { taskActivityId: null, id: { notIn: parsed.retained } },
                     create: parsed.uploads,
                   },
                 }
@@ -87,13 +90,21 @@ export class TasksService {
     return this.prisma.taskActivity.findMany({
       where: { taskId: id },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      include: activityInclude,
     });
   }
 
-  async comment(id: string, message: string) {
+  async comment(id: string, { body: message, attachments = [] }: CreateCommentDto) {
+    const { uploads } = parseAttachments(attachments, false);
     try {
       return await this.prisma.taskActivity.create({
-        data: { task: { connect: { id } }, kind: 'comment', message },
+        data: {
+          task: { connect: { id } },
+          kind: 'comment',
+          message,
+          attachments: { create: uploads.map((file) => ({ ...file, taskId: id })) },
+        },
+        include: activityInclude,
       });
     } catch (error) {
       this.rethrowNotFound(error);
@@ -105,6 +116,15 @@ export class TasksService {
       await this.prisma.task.delete({ where: { id } });
     } catch (error) {
       this.rethrowNotFound(error);
+    }
+  }
+
+  private async validateAssignee(
+    id: string | null | undefined,
+    db: Pick<Prisma.TransactionClient, 'workspaceUser'>,
+  ) {
+    if (id && !(await db.workspaceUser.findUnique({ where: { id }, select: { id: true } }))) {
+      throw new BadRequestException('Исполнитель не найден');
     }
   }
 

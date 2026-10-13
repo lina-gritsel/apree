@@ -1,9 +1,15 @@
 export type Status = 'new' | 'in_progress' | 'done';
 export type Priority = 'low' | 'medium' | 'high';
+export interface User {
+  id: string;
+  name: string;
+  color: string;
+}
 export interface ActivityEvent {
   id: string;
   taskId: string;
   kind: 'created' | 'updated' | 'comment';
+  attachments?: Attachment[];
   message: string;
   createdAt: string;
 }
@@ -24,10 +30,13 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   labels?: string[];
+  assigneeId?: string | null;
+  assignee?: User | null;
   attachments?: Attachment[];
 }
 export type TaskInput = Pick<Task, 'title' | 'description' | 'priority' | 'status'> & {
   labels?: string[];
+  assigneeId?: string | null;
   attachments?: AttachmentInput[];
 };
 export const statuses: { value: Status; label: string; color: string; hint: string }[] = [
@@ -50,8 +59,8 @@ export const priorities: Record<Priority, string> = {
   medium: 'Средний',
   high: 'Высокий',
 };
-async function request<T>(path = '', options?: RequestInit): Promise<T> {
-  const response = await fetch('/api/tasks' + path, {
+async function request<T>(path = '', options?: RequestInit, base = '/api/tasks'): Promise<T> {
+  const response = await fetch(base + path, {
     ...options,
     headers: { 'Content-Type': 'application/json' },
   }).catch((error: unknown) => {
@@ -68,12 +77,15 @@ async function request<T>(path = '', options?: RequestInit): Promise<T> {
   return response.status === 204 ? (undefined as T) : (response.json() as Promise<T>);
 }
 export const tasksApi = {
+  users: (signal?: AbortSignal) => request<User[]>('', { signal }, '/api/users'),
+  createUser: (name: string) =>
+    request<User>('', { method: 'POST', body: JSON.stringify({ name }) }, '/api/users'),
   activity: (id: string, signal?: AbortSignal) =>
     request<ActivityEvent[]>('/' + id + '/activity', { signal }),
-  comment: (id: string, body: string) =>
+  comment: (id: string, body: string, attachments?: AttachmentInput[]) =>
     request<ActivityEvent>('/' + id + '/comments', {
       method: 'POST',
-      body: JSON.stringify({ body }),
+      body: JSON.stringify({ body, attachments }),
     }),
   list: (signal?: AbortSignal) => request<Task[]>('', { signal }),
   create: (task: TaskInput) => request<Task>('', { method: 'POST', body: JSON.stringify(task) }),

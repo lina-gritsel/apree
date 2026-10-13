@@ -35,6 +35,10 @@ export class AttachmentDto {
 }
 
 export class TaskExtrasDto {
+  @ValidateIf((_object, value: unknown) => value !== undefined && value !== null)
+  @IsUUID()
+  assigneeId?: string | null;
+
   @ValidateIf((_object, value: unknown) => value !== undefined)
   @Transform(({ value }: { value: unknown }) =>
     Array.isArray(value)

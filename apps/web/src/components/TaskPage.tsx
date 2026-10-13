@@ -25,6 +25,7 @@ export function TaskPage({ task, onSave, onDelete, pending, onDirtyChange }: Pro
     priority: task.priority,
     status: task.status,
     labels: task.labels ?? [],
+    assigneeId: task.assigneeId ?? task.assignee?.id ?? null,
   });
   const [files, setFiles] = useState<DraftAttachment[]>(task.attachments ?? []);
   const [baseline, setBaseline] = useState(JSON.stringify({ draft, files }));
@@ -46,6 +47,7 @@ export function TaskPage({ task, onSave, onDelete, pending, onDirtyChange }: Pro
       priority: task.priority,
       status: task.status,
       labels: task.labels ?? [],
+      assigneeId: task.assigneeId ?? task.assignee?.id ?? null,
     };
     const incomingFiles = task.attachments ?? [];
     const incoming = JSON.stringify({ draft: incomingDraft, files: incomingFiles });
@@ -96,6 +98,7 @@ export function TaskPage({ task, onSave, onDelete, pending, onDirtyChange }: Pro
     >
       <Box
         sx={{
+          display: { xs: 'contents', md: 'block' },
           width: '100%',
           maxWidth: 820,
           mx: 'auto',
@@ -103,7 +106,12 @@ export function TaskPage({ task, onSave, onDelete, pending, onDirtyChange }: Pro
           py: { xs: 3, md: 5 },
         }}
       >
-        <Box component="form" onSubmit={submit} id="task-edit-form">
+        <Box
+          component="form"
+          onSubmit={submit}
+          id="task-edit-form"
+          sx={{ px: { xs: 2.5, md: 0 }, pt: { xs: 3, md: 0 } }}
+        >
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
@@ -181,19 +189,26 @@ export function TaskPage({ task, onSave, onDelete, pending, onDirtyChange }: Pro
             )}
           </Box>
         </Box>
-        <TaskActivity
-          taskId={task.id}
-          createdAt={task.createdAt}
-          updatedAt={task.updatedAt}
-          onDirtyChange={setCommentDirty}
-        />
+        <Box sx={{ order: { xs: 2, md: 0 }, px: { xs: 2.5, md: 0 }, pb: 3 }}>
+          <TaskActivity
+            taskId={task.id}
+            createdAt={task.createdAt}
+            updatedAt={task.updatedAt}
+            onDirtyChange={setCommentDirty}
+          />
+        </Box>
       </Box>
       <Box
         component="aside"
         aria-label="Свойства задачи"
+        data-testid="task-properties"
         sx={{
+          order: { xs: 1, md: 0 },
+          position: { md: 'sticky' },
+          top: { md: 24 },
+          alignSelf: 'start',
           borderStyle: 'solid',
-          borderLeftWidth: { xs: 0, md: 1 },
+          borderLeftWidth: 0,
           borderTopWidth: { xs: 1, md: 0 },
           borderRightWidth: 0,
           borderBottomWidth: 0,
@@ -204,6 +219,10 @@ export function TaskPage({ task, onSave, onDelete, pending, onDirtyChange }: Pro
       >
         <Typography sx={{ fontSize: 12, fontWeight: 600, mb: 2 }}>Свойства</Typography>
         <TaskProperties
+          vertical
+          assigneeId={draft.assigneeId}
+          assignee={task.assignee}
+          onAssignee={(assigneeId) => setDraft({ ...draft, assigneeId })}
           status={draft.status}
           priority={draft.priority}
           labels={draft.labels}

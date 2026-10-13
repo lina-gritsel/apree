@@ -5,6 +5,7 @@ import { describeChanges } from '../src/tasks/task-activity';
 
 const before: Task & { attachments: { id: string; name: string }[] } = {
   id: 'task',
+  assigneeId: null,
   title: 'Plan',
   description: 'Old',
   status: 'new',

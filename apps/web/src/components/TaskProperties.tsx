@@ -1,10 +1,15 @@
 import { useState } from 'react';
-import { Box, Button, Chip, MenuItem, Popover, TextField } from '@mui/material';
+import { Box, Button, Chip, MenuItem, Popover, TextField, Typography } from '@mui/material';
 import LabelOutlined from '@mui/icons-material/LabelOutlined';
-import { priorities, statuses, type Priority, type Status } from '../api/tasks';
+import { priorities, statuses, type Priority, type Status, type User } from '../api/tasks';
 import { StatusIcon } from './StatusIcon';
+import { AssigneeSelect } from './AssigneeSelect';
 import { PriorityBadge } from './PriorityBadge';
 interface Props {
+  vertical?: boolean;
+  assigneeId?: string | null;
+  assignee?: User | null;
+  onAssignee?: (id: string | null) => void;
   status: Status;
   priority: Priority;
   labels: string[];
@@ -30,6 +35,10 @@ export function TaskProperties({
   onStatus,
   onPriority,
   onLabels,
+  vertical,
+  assigneeId = null,
+  assignee,
+  onAssignee,
 }: Props) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [label, setLabel] = useState('');
@@ -40,7 +49,27 @@ export function TaskProperties({
     setAnchor(null);
   };
   return (
-    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        gap: 1.25,
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        ...(vertical && {
+          gap: 0.5,
+          '& > .MuiTextField-root, & > button:first-of-type': { width: '100%' },
+          '& > .MuiTextField-root .MuiOutlinedInput-root, & > button.MuiButton-root': {
+            bgcolor: 'transparent',
+            borderColor: 'transparent',
+            borderRadius: '6px',
+            justifyContent: 'flex-start',
+            '&:hover': { bgcolor: 'action.hover', borderColor: 'transparent' },
+          },
+          '& .MuiOutlinedInput-notchedOutline': { border: 0 },
+          '& .MuiSelect-icon': { display: 'none' },
+        }),
+      }}
+    >
       <TextField
         select
         value={status}
@@ -70,6 +99,19 @@ export function TaskProperties({
           </MenuItem>
         ))}
       </TextField>
+      {onAssignee && (
+        <AssigneeSelect
+          value={assigneeId}
+          user={assignee}
+          onChange={onAssignee}
+          disabled={disabled}
+        />
+      )}
+      {vertical && (
+        <Typography sx={{ width: '100%', fontSize: 11, color: 'text.secondary', mt: 2, mb: 0.25 }}>
+          Метки
+        </Typography>
+      )}
       <Button
         color="inherit"
         variant="outlined"

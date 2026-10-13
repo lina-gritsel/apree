@@ -31,6 +31,7 @@ export function TaskDialog({ status, onClose, onSave, pending }: Props) {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [selectedStatus, setStatus] = useState<Status>(status);
+  const [assigneeId, setAssigneeId] = useState<string | null>(null);
   const [labels, setLabels] = useState<string[]>([]);
   const [files, setFiles] = useState<DraftAttachment[]>([]);
   const [reading, setReading] = useState(false);
@@ -43,6 +44,7 @@ export function TaskDialog({ status, onClose, onSave, pending }: Props) {
     description !== '' ||
     priority !== 'medium' ||
     selectedStatus !== status ||
+    assigneeId !== null ||
     JSON.stringify(labels) !== JSON.stringify([]) ||
     JSON.stringify(files) !== JSON.stringify([]);
   const close = () => {
@@ -64,6 +66,7 @@ export function TaskDialog({ status, onClose, onSave, pending }: Props) {
         priority,
         status: selectedStatus,
         labels,
+        assigneeId,
         attachments: attachmentPayload(files),
       });
       onClose();
@@ -197,6 +200,8 @@ export function TaskDialog({ status, onClose, onSave, pending }: Props) {
             onStatus={setStatus}
             onPriority={setPriority}
             onLabels={setLabels}
+            assigneeId={assigneeId}
+            onAssignee={setAssigneeId}
             disabled={disabled}
           />
           {!!files.length && (

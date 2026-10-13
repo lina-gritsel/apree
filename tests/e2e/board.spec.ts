@@ -306,6 +306,14 @@ test.describe('Доска задач', () => {
     await detail.getByRole('textbox', { name: 'Описание', exact: true }).fill('');
     const comment = `Согласовали следующий шаг ${Date.now()}`;
     await detail.getByRole('textbox', { name: 'Комментарий', exact: true }).fill(comment);
+    await page
+      .getByRole('region', { name: 'Активность' })
+      .getByLabel('Файлы', { exact: true })
+      .setInputFiles({
+        name: 'comment.txt',
+        mimeType: 'text/plain',
+        buffer: Buffer.from('Файл комментария'),
+      });
     await page.route(`**/api/tasks/${task.id}/comments`, (route) =>
       route.fulfill({
         status: 503,
@@ -331,6 +339,12 @@ test.describe('Доска задач', () => {
         .getByRole('region', { name: 'Активность', exact: true })
         .getByText(comment, { exact: true }),
     ).toBeVisible();
+    const commentFile = page
+      .getByRole('region', { name: 'Активность' })
+      .getByRole('link', { name: 'comment.txt', exact: true });
+    await expect(commentFile).toBeVisible();
+    const fileResponse = await request.get((await commentFile.getAttribute('href'))!);
+    expect(await fileResponse.text()).toBe('Файл комментария');
     await page.goBack();
     await expect(page).toHaveURL('/');
     await expect(
@@ -345,5 +359,127 @@ test.describe('Доска задач', () => {
         .getByRole('region', { name: 'Активность', exact: true })
         .getByText(comment, { exact: true }),
     ).toBeVisible();
+  });
+
+  test('список сохраняет фильтры и выбранный вид после перезагрузки', async ({ page, request }) => {
+    const prefix = `E2E список ${Date.now()}`;
+    for (const priority of ['low', 'high']) {
+      const response = await request.post('/api/tasks', {
+        data: { title: `${prefix} ${priority}`, priority },
+      });
+      expect(response.ok()).toBeTruthy();
+      taskIds.add(((await response.json()) as { id: string }).id);
+    }
+    await page.goto('/');
+    await page.getByRole('textbox', { name: 'Поиск задач' }).fill(prefix);
+    await page.getByRole('combobox', { name: 'Фильтр приоритета' }).click();
+    await page.getByRole('option', { name: 'Высокий', exact: true }).click();
+    await page.getByRole('button', { name: 'Список', exact: true }).click();
+    await expect(page.getByTestId('task-list')).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Открыть задачу:/ })).toHaveCount(1);
+    await expect(
+      page.getByRole('button', { name: `Открыть задачу: ${prefix} high`, exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Доска', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: 'Поиск задач' })).toHaveValue(prefix);
+    await expect(page.getByRole('button', { name: /^Открыть задачу:/ })).toHaveCount(1);
+    await page.getByRole('button', { name: 'Список', exact: true }).click();
+    await page.reload();
+    await expect(page.getByTestId('task-list')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Список', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await page.getByRole('button', { name: 'Свернуть: Новая', exact: true }).click();
+    await expect(
+      page.getByRole('button', { name: 'Развернуть: Новая', exact: true }),
+    ).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('участник создается и назначение сохраняется на доске, в списке и на странице', async ({
+    page,
+    request,
+  }) => {
+    const title = `E2E исполнитель ${Date.now()}`;
+    const userName = 'E2E Участник';
+    const users = (await (await request.get('/api/users')).json()) as {
+      id: string;
+      name: string;
+    }[];
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Создать задачу', exact: true }).click();
+    const form = page.getByRole('dialog');
+    await form.getByRole('textbox', { name: /^Название/ }).fill(title);
+    await form.getByRole('button', { name: 'Исполнитель', exact: true }).click();
+    await page.getByRole('textbox', { name: 'Поиск исполнителя' }).fill(userName);
+    if (users.some((user) => user.name === userName)) {
+      await page.getByText(userName, { exact: true }).click();
+    } else {
+      const createdUser = page.waitForResponse(
+        (response) =>
+          response.url().endsWith('/api/users') && response.request().method() === 'POST',
+      );
+      await page.getByRole('button', { name: 'Добавить участника', exact: true }).click();
+      expect((await createdUser).status()).toBe(201);
+    }
+    await expect(form.getByRole('button', { name: 'Исполнитель', exact: true })).toContainText(
+      userName,
+    );
+    const created = page.waitForResponse(
+      (response) => response.url().endsWith('/api/tasks') && response.request().method() === 'POST',
+    );
+    await form.getByRole('button', { name: 'Создать задачу', exact: true }).click();
+    const task = (await (await created).json()) as { id: string; assignee: { name: string } };
+    taskIds.add(task.id);
+    expect(task.assignee.name).toBe(userName);
+    await expect(
+      page.getByTestId(`task-${task.id}`).getByLabel(userName, { exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Список', exact: true }).click();
+    await expect(
+      page.getByTestId(`list-task-${task.id}`).getByLabel(userName, { exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: `Открыть задачу: ${title}`, exact: true }).click();
+    await page.reload();
+    await expect(
+      page.getByTestId('task-page').getByRole('button', { name: 'Исполнитель', exact: true }),
+    ).toContainText(userName);
+  });
+
+  test('панель свойств остается видимой при прокрутке длинной активности', async ({
+    page,
+    request,
+  }) => {
+    const response = await request.post('/api/tasks', {
+      data: { title: `E2E прокрутка ${Date.now()}` },
+    });
+    const task = (await response.json()) as { id: string };
+    taskIds.add(task.id);
+    for (let index = 0; index < 5; index++) {
+      const comment = await request.post(`/api/tasks/${task.id}/comments`, {
+        data: { body: `Запись ${index}\n` + 'Подробный контекст задачи.\n'.repeat(12) },
+      });
+      expect(comment.ok()).toBeTruthy();
+    }
+    await page.goto(`/tasks/${task.id}`);
+    const detail = page.getByTestId('task-page');
+    const properties = page.getByTestId('task-properties');
+    await expect(properties).toBeVisible();
+    await expect(
+      page.getByRole('region', { name: 'Активность' }).getByText(/^Запись 4/),
+    ).toBeVisible();
+    await detail.evaluate((element) => {
+      element.scrollTop = 600;
+    });
+    await expect.poll(() => detail.evaluate((element) => element.scrollTop)).toBeGreaterThan(200);
+    const container = await detail.boundingBox();
+    const sidebar = await properties.boundingBox();
+    expect(container).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+    expect(sidebar!.y).toBeGreaterThanOrEqual(container!.y);
+    expect(sidebar!.y).toBeLessThan(container!.y + 40);
+    await expect(
+      properties.getByRole('button', { name: 'Исполнитель', exact: true }),
+    ).toBeInViewport();
   });
 });

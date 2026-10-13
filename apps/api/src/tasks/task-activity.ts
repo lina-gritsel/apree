@@ -1,11 +1,18 @@
 import { Task } from '@prisma/client';
 
-type TaskSnapshot = Task & { attachments: { id: string; name: string }[] };
+type TaskSnapshot = Task & {
+  attachments: { id: string; name: string }[];
+  assignee?: { name: string } | null;
+};
 const statuses = { new: 'Новая', in_progress: 'В работе', done: 'Готово' };
 const priorities = { low: 'Низкий', medium: 'Средний', high: 'Высокий' };
 
 export function describeChanges(before: TaskSnapshot, after: TaskSnapshot): string {
   const changes: string[] = [];
+  if (before.assigneeId !== after.assigneeId)
+    changes.push(
+      `Исполнитель: ${before.assignee?.name ?? 'Не назначен'} → ${after.assignee?.name ?? 'Не назначен'}`,
+    );
   if (before.title !== after.title) changes.push(`Название: «${before.title}» → «${after.title}»`);
   if (before.status !== after.status)
     changes.push(`Статус: ${statuses[before.status]} → ${statuses[after.status]}`);

@@ -1,10 +1,21 @@
-import { Box, Button, InputAdornment, MenuItem, TextField, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  InputAdornment,
+  MenuItem,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+} from '@mui/material';
 import AddRounded from '@mui/icons-material/AddRounded';
 import SearchRounded from '@mui/icons-material/SearchRounded';
+import FormatListBulletedRounded from '@mui/icons-material/FormatListBulletedRounded';
 import ViewKanbanOutlined from '@mui/icons-material/ViewKanbanOutlined';
 import { priorities, type Priority } from '../api/tasks';
 
 interface Props {
+  view: 'board' | 'list';
+  onView: (view: 'board' | 'list') => void;
   search: string;
   priority: Priority | 'all';
   onSearch: (value: string) => void;
@@ -12,7 +23,15 @@ interface Props {
   onCreate: () => void;
 }
 
-export function BoardToolbar({ search, priority, onSearch, onPriority, onCreate }: Props) {
+export function BoardToolbar({
+  view,
+  onView,
+  search,
+  priority,
+  onSearch,
+  onPriority,
+  onCreate,
+}: Props) {
   return (
     <Box
       sx={{
@@ -24,23 +43,39 @@ export function BoardToolbar({ search, priority, onSearch, onPriority, onCreate 
         flexShrink: 0,
       }}
     >
-      <Box
+      <ToggleButtonGroup
+        exclusive
+        value={view}
+        onChange={(_, value: 'board' | 'list' | null) => {
+          if (value) onView(value);
+        }}
+        aria-label="Вид задач"
+        size="small"
         sx={{
-          display: { xs: 'none', md: 'flex' },
-          alignItems: 'center',
-          gap: 0.8,
           mr: 'auto',
-          px: 1.25,
-          height: 34,
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: '18px',
-          bgcolor: 'background.paper',
+          flexShrink: 0,
+          '& .MuiToggleButton-root': {
+            px: 1.2,
+            height: 34,
+            gap: 0.7,
+            fontSize: 12,
+            textTransform: 'none',
+            borderColor: 'divider',
+            color: 'text.secondary',
+            '&.Mui-selected': { bgcolor: 'action.selected', color: 'text.primary' },
+            '&.Mui-selected:hover': { bgcolor: 'action.selected' },
+          },
         }}
       >
-        <ViewKanbanOutlined sx={{ fontSize: 17, color: 'text.secondary' }} />
-        <Typography sx={{ fontSize: 12, fontWeight: 500 }}>Все задачи</Typography>
-      </Box>
+        <ToggleButton value="list" aria-label="Список">
+          <FormatListBulletedRounded sx={{ fontSize: 16 }} />
+          Список
+        </ToggleButton>
+        <ToggleButton value="board" aria-label="Доска">
+          <ViewKanbanOutlined sx={{ fontSize: 16 }} />
+          Доска
+        </ToggleButton>
+      </ToggleButtonGroup>
       <TextField
         size="small"
         value={search}

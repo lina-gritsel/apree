@@ -28,6 +28,7 @@ import { useTasks } from './hooks/useTasks';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { BoardToolbar } from './components/BoardToolbar';
+import { TaskList } from './components/TaskList';
 import { BoardColumn } from './components/BoardColumn';
 import { TaskCard } from './components/TaskCard';
 import { TaskDialog } from './components/TaskDialog';
@@ -45,6 +46,21 @@ export function App() {
   const [mode, setMode] = useState(initialTheme);
   const theme = useMemo(() => makeTheme(mode), [mode]);
   const mobile = useMediaQuery('(max-width:767px)');
+  const [view, setView] = useState<'board' | 'list'>(() => {
+    try {
+      return localStorage.getItem('apri-view') === 'list' ? 'list' : 'board';
+    } catch {
+      return 'board';
+    }
+  });
+  const changeView = (value: 'board' | 'list') => {
+    setView(value);
+    try {
+      localStorage.setItem('apri-view', value);
+    } catch {
+      /* View remains usable without storage. */
+    }
+  };
   const [search, setSearch] = useState('');
   const [priority, setPriority] = useState<Priority | 'all'>('all');
   const [mobileStatus, setMobileStatus] = useState<Status>('new');
@@ -164,6 +180,8 @@ export function App() {
             }}
           >
             <BoardToolbar
+              view={view}
+              onView={changeView}
               search={search}
               priority={priority}
               onSearch={setSearch}
@@ -183,7 +201,7 @@ export function App() {
                 Не удалось загрузить задачи. Проверьте подключение и попробуйте ещё раз.
               </Alert>
             )}
-            {mobile && (
+            {mobile && view === 'board' && (
               <Tabs
                 value={mobileStatus}
                 onChange={(_, value: Status) => setMobileStatus(value)}
@@ -204,61 +222,71 @@ export function App() {
                 ))}
               </Tabs>
             )}
-            <DndContext
-              sensors={sensors}
-              onDragStart={(event) =>
-                setActive(tasks.find((task) => task.id === event.active.id) ?? null)
-              }
-              onDragEnd={dragEnd}
-              onDragCancel={() => setActive(null)}
-              accessibility={{
-                screenReaderInstructions: {
-                  draggable:
-                    'Чтобы взять задачу, нажмите пробел. Перемещайте её стрелками. Нажмите пробел для завершения или Escape для отмены. Статус также можно изменить через меню задачи.',
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  display: 'grid',
-                  flex: 1,
-                  minHeight: 0,
-                  gridTemplateRows: 'minmax(0, 1fr)',
-                  gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'repeat(3, minmax(0, 1fr))',
-                  gap: 1.5,
-                  pt: 0.5,
-                  pb: 1,
+            {view === 'list' ? (
+              <TaskList
+                tasks={filtered}
+                loading={query.isPending}
+                filtered={!!search.trim() || priority !== 'all'}
+                onOpen={open}
+                onCreate={create}
+              />
+            ) : (
+              <DndContext
+                sensors={sensors}
+                onDragStart={(event) =>
+                  setActive(tasks.find((task) => task.id === event.active.id) ?? null)
+                }
+                onDragEnd={dragEnd}
+                onDragCancel={() => setActive(null)}
+                accessibility={{
+                  screenReaderInstructions: {
+                    draggable:
+                      'Чтобы взять задачу, нажмите пробел. Перемещайте её стрелками. Нажмите пробел для завершения или Escape для отмены. Статус также можно изменить через меню задачи.',
+                  },
                 }}
               >
-                {statuses
-                  .filter((status) => !mobile || status.value === mobileStatus)
-                  .map((status) => (
-                    <BoardColumn
-                      key={status.value}
-                      status={status}
-                      tasks={filtered.filter((task) => task.status === status.value)}
-                      loading={query.isPending}
-                      filtered={!!search.trim() || priority !== 'all'}
-                      busy={move.isPending}
-                      onCreate={create}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    flex: 1,
+                    minHeight: 0,
+                    gridTemplateRows: 'minmax(0, 1fr)',
+                    gridTemplateColumns: mobile ? 'minmax(0, 1fr)' : 'repeat(3, minmax(0, 1fr))',
+                    gap: 1.5,
+                    pt: 0.5,
+                    pb: 1,
+                  }}
+                >
+                  {statuses
+                    .filter((status) => !mobile || status.value === mobileStatus)
+                    .map((status) => (
+                      <BoardColumn
+                        key={status.value}
+                        status={status}
+                        tasks={filtered.filter((task) => task.status === status.value)}
+                        loading={query.isPending}
+                        filtered={!!search.trim() || priority !== 'all'}
+                        busy={move.isPending}
+                        onCreate={create}
+                        onOpen={open}
+                        onMove={changeStatus}
+                        onDelete={askDelete}
+                      />
+                    ))}
+                </Box>
+                <DragOverlay dropAnimation={null}>
+                  {active && (
+                    <TaskCard
+                      task={active}
                       onOpen={open}
                       onMove={changeStatus}
                       onDelete={askDelete}
+                      overlay
                     />
-                  ))}
-              </Box>
-              <DragOverlay dropAnimation={null}>
-                {active && (
-                  <TaskCard
-                    task={active}
-                    onOpen={open}
-                    onMove={changeStatus}
-                    onDelete={askDelete}
-                    overlay
-                  />
-                )}
-              </DragOverlay>
-            </DndContext>
+                  )}
+                </DragOverlay>
+              </DndContext>
+            )}
           </Box>
         )}
       </Box>

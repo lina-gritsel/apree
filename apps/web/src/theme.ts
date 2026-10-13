@@ -86,6 +86,16 @@ export const makeTheme = (mode: 'light' | 'dark') => {
           notchedOutline: { borderColor: dark ? '#303030' : '#e0e0e0' },
         },
       },
+      MuiListItemButton: {
+        styleOverrides: {
+          root: {
+            '&:hover': { backgroundColor: hover },
+            '&.Mui-selected, &.Mui-selected:hover, &.Mui-focusVisible': {
+              backgroundColor: selected,
+            },
+          },
+        },
+      },
       MuiMenuItem: {
         styleOverrides: {
           root: {

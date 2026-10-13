@@ -3,6 +3,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { Box, ButtonBase, IconButton, Menu, MenuItem, Divider, Typography } from '@mui/material';
 import MoreHorizRounded from '@mui/icons-material/MoreHorizRounded';
 import AttachFileRounded from '@mui/icons-material/AttachFileRounded';
+import { UserAvatar } from './UserAvatar';
 import { StatusIcon } from './StatusIcon';
 import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
@@ -57,9 +58,12 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
           borderRadius: '6px',
         }}
       >
-        <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 0.9, pr: 3 }}>
+        <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 0.9, pr: 6 }}>
           TSK-{task.id.slice(-6).toUpperCase()}
         </Typography>
+        <Box sx={{ position: 'absolute', right: 14, top: 10 }}>
+          <UserAvatar user={task.assignee ?? null} size={22} />
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.8 }}>
           <Box sx={{ display: 'flex', pt: 0.3 }}>
             <StatusIcon status={task.status} />
@@ -76,23 +80,6 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
             {task.title}
           </Typography>
         </Box>
-        {task.description && (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              mt: 0.5,
-              fontSize: 12,
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              overflowWrap: 'anywhere',
-            }}
-          >
-            {task.description}
-          </Typography>
-        )}
         <Box
           sx={{
             display: 'flex',
@@ -142,7 +129,16 @@ export function TaskCard({ task, onOpen, onMove, onDelete, busy, overlay }: Prop
         aria-label={'Действия: ' + task.title}
         onClick={(event) => setAnchor(event.currentTarget)}
         disabled={busy}
-        sx={{ position: 'absolute', right: 6, top: 5, color: 'text.secondary' }}
+        sx={{
+          position: 'absolute',
+          right: 42,
+          top: 7,
+          opacity: 0,
+          '@media (hover: none)': { opacity: 1 },
+          '.MuiBox-root:hover > &': { opacity: 1 },
+          '&:focus-visible': { opacity: 1 },
+          color: 'text.secondary',
+        }}
       >
         <MoreHorizRounded sx={{ fontSize: 17 }} />
       </IconButton>

@@ -28,6 +28,8 @@ model Task {
   labels      String[] @default([])
   attachments Attachment[]
   activity    TaskActivity[]
+  assigneeId  String? @db.Uuid
+  assignee    WorkspaceUser? @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 }
@@ -36,6 +38,8 @@ model Attachment {
   id          String @id @default(uuid()) @db.Uuid
   taskId      String @db.Uuid
   task        Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskActivityId String? @db.Uuid
+  taskActivity TaskActivity? @relation(fields: [taskActivityId], references: [id], onDelete: Cascade)
   name        String @db.VarChar(180)
   contentType String @db.VarChar(100)
   size        Int
@@ -50,6 +54,14 @@ model TaskActivity {
   task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   kind      String @db.VarChar(16)
   message   String @db.VarChar(5000)
+  attachments Attachment[]
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   @@index([taskId, createdAt])
+}
+
+model WorkspaceUser {
+  id    String @id @default(uuid()) @db.Uuid
+  name  String @db.VarChar(80)
+  color String @db.VarChar(7)
+  tasks Task[]
 }

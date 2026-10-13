@@ -55,7 +55,7 @@ export class TasksController {
 
   @Post(':id/comments')
   comment(@Param('id', ParseUUIDPipe) id: string, @Body() body: CreateCommentDto) {
-    return this.tasks.comment(id, body.body);
+    return this.tasks.comment(id, body);
   }
 
   @Post()
